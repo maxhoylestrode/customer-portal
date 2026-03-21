@@ -17,7 +17,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 const MAX_FILES = 5;
-const MAX_SIZE_MB = 10;
+const MAX_SIZE_MB = 50;
 
 export default function NewTicketPage() {
   const navigate = useNavigate();
