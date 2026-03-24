@@ -16,6 +16,7 @@ import ClientDashboard from './pages/client/Dashboard';
 import TicketsPage from './pages/client/TicketsPage';
 import NewTicketPage from './pages/client/NewTicketPage';
 import TicketDetailPage from './pages/client/TicketDetailPage';
+import ProfilePage from './pages/client/ProfilePage';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -23,6 +24,8 @@ import AdminTicketsPage from './pages/admin/AdminTicketsPage';
 import AdminTicketDetail from './pages/admin/AdminTicketDetail';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
+import AdminAccountsPage from './pages/admin/AdminAccountsPage';
+import AdminProfilePage from './pages/admin/AdminProfilePage';
 
 // Misc
 import NotFoundPage from './pages/NotFoundPage';
@@ -58,6 +61,7 @@ export default function App() {
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/tickets/new" element={<NewTicketPage />} />
               <Route path="/tickets/:id" element={<TicketDetailPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
 
             {/* Admin routes */}
@@ -67,6 +71,8 @@ export default function App() {
               <Route path="/admin/tickets/:id" element={<AdminTicketDetail />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/users/:id" element={<AdminUserDetail />} />
+              <Route path="/admin/accounts" element={<AdminAccountsPage />} />
+              <Route path="/admin/profile" element={<AdminProfilePage />} />
             </Route>
 
             {/* Redirects */}

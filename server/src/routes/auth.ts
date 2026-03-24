@@ -5,6 +5,8 @@ import {
   refresh,
   logout,
   getMe,
+  updateProfile,
+  changePassword,
   confirmPasswordReset,
 } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
@@ -16,6 +18,8 @@ router.post('/login', login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);
 router.get('/me', authenticate, getMe);
+router.patch('/profile', authenticate, updateProfile);
+router.patch('/password', authenticate, changePassword);
 router.post('/reset-password/confirm', confirmPasswordReset);
 
 export default router;

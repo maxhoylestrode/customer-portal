@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +12,8 @@ import { PageSpinner } from '../../components/Spinner';
 import Spinner from '../../components/Spinner';
 import { useToast } from '../../components/Toast';
 import { formatDate } from '../../utils/formatters';
-import { Globe, Mail, Phone, Building, FileText, KeyRound, Power, AlertCircle, Ticket } from 'lucide-react';
+import { Globe, Mail, Phone, Building, FileText, KeyRound, Power, AlertCircle, Ticket, Trash2 } from 'lucide-react';
+import Modal from '../../components/Modal';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -28,7 +29,9 @@ export default function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [editMode, setEditMode] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ['admin-user', id],
@@ -70,6 +73,20 @@ export default function AdminUserDetail() {
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to send reset email';
       toast(msg, 'error');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => adminApi.deleteUser(Number(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast('Client account deleted', 'success');
+      navigate('/admin/users');
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed to delete account';
+      toast(msg, 'error');
+      setShowDeleteModal(false);
     },
   });
 
@@ -276,9 +293,39 @@ export default function AdminUserDetail() {
             </div>
 
             <p className="text-xs text-gray-400 pt-1">Client since {formatDate(user.created_at)}</p>
+
+            <div className="border-t border-gray-100 pt-3">
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full text-sm flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 font-medium transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete Client Account
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Client Account" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-700">
+            Are you sure you want to permanently delete <span className="font-semibold">{user.name}</span>'s account?
+            This will remove all their tickets, attachments, and activity history. This action cannot be undone.
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button onClick={() => setShowDeleteModal(false)} className="btn-secondary text-sm">Cancel</button>
+            <button
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="text-sm flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium transition-colors disabled:opacity-60"
+            >
+              {deleteMutation.isPending ? <Spinner className="w-3.5 h-3.5" /> : <Trash2 className="w-3.5 h-3.5" />}
+              Delete Account
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

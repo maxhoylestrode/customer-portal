@@ -1,9 +1,9 @@
 import api from './axios';
-import { User, DashboardStats, TicketActivity } from '../types';
+import { User, DashboardStats, TicketActivity, MonthlyTrend, PriorityBreakdown } from '../types';
 
 export const adminApi = {
   getStats: () =>
-    api.get<{ stats: DashboardStats; recentActivity: TicketActivity[] }>('/admin/stats'),
+    api.get<{ stats: DashboardStats; recentActivity: TicketActivity[]; monthlyTrend: MonthlyTrend[]; priorityBreakdown: PriorityBreakdown[] }>('/admin/stats'),
 
   getUsers: () => api.get<{ users: User[] }>('/admin/users'),
 
@@ -29,4 +29,13 @@ export const adminApi = {
 
   sendPasswordReset: (userId: number) =>
     api.post(`/admin/users/${userId}/reset-password`),
+
+  deleteUser: (userId: number) =>
+    api.delete(`/admin/users/${userId}`),
+
+  listAdmins: () =>
+    api.get<{ admins: User[] }>('/admin/admins'),
+
+  createAdmin: (data: { name: string; email: string; password: string }) =>
+    api.post<{ user: User }>('/admin/admins', data),
 };

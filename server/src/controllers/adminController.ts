@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
+import fs from 'fs';
 import { query } from '../config/db';
 import { AppError } from '../middleware/errorHandler';
 import { sendInviteEmail } from '../services/emailService';
@@ -156,6 +158,8 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
         COUNT(*) FILTER (WHERE status = 'pending') as pending,
         COUNT(*) FILTER (WHERE status = 'in_progress') as in_progress,
         COUNT(*) FILTER (WHERE status = 'complete' AND updated_at >= date_trunc('month', NOW())) as completed_this_month,
+        COUNT(*) FILTER (WHERE status = 'complete') as total_complete,
+        COUNT(*) FILTER (WHERE status = 'out_of_scope') as total_out_of_scope,
         COUNT(*) as total
       FROM tickets
     `);
@@ -171,13 +175,94 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
       LIMIT 20
     `);
 
+    const monthlyTrend = await query(`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month,
+        DATE_TRUNC('month', created_at) as month_date,
+        COUNT(*) as count
+      FROM tickets
+      WHERE created_at >= DATE_TRUNC('month', NOW() - INTERVAL '5 months')
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY month_date ASC
+    `);
+
+    const priorityBreakdown = await query(`
+      SELECT priority, COUNT(*) as count
+      FROM tickets
+      GROUP BY priority
+      ORDER BY priority
+    `);
+
     res.json({
       stats: {
         ...statsResult.rows[0],
         total_clients: clientCount.rows[0].total,
       },
       recentActivity: recentActivity.rows,
+      monthlyTrend: monthlyTrend.rows,
+      priorityBreakdown: priorityBreakdown.rows,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listAdmins(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await query(
+      `SELECT id, name, email, is_active, created_at FROM users WHERE role = 'admin' ORDER BY created_at ASC`
+    );
+    res.json({ admins: result.rows });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function createAdmin(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) throw new AppError('Name, email, and password are required', 400);
+    if (password.length < 8) throw new AppError('Password must be at least 8 characters', 400);
+
+    const existing = await query(`SELECT id FROM users WHERE email = $1`, [email]);
+    if (existing.rows.length > 0) throw new AppError('An account with that email already exists', 409);
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const result = await query(
+      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'admin') RETURNING id, name, email, role, created_at`,
+      [name, email, passwordHash]
+    );
+
+    res.status(201).json({ user: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteUser(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = parseInt(req.params.id);
+
+    const userResult = await query(`SELECT id, role FROM users WHERE id = $1`, [userId]);
+    if (userResult.rows.length === 0) throw new AppError('User not found', 404);
+    if (userResult.rows[0].role !== 'client') throw new AppError('Cannot delete admin accounts', 403);
+
+    // Collect attachment filepaths before cascade-delete removes the DB records
+    const attachmentResult = await query(
+      `SELECT a.filepath FROM attachments a JOIN tickets t ON a.ticket_id = t.id WHERE t.user_id = $1`,
+      [userId]
+    );
+    const filepaths = attachmentResult.rows.map((r: { filepath: string }) => r.filepath);
+
+    // Delete user — DB cascades handle tickets, attachments, ticket_activity, refresh_tokens
+    await query(`DELETE FROM users WHERE id = $1`, [userId]);
+
+    // Remove physical files
+    for (const filepath of filepaths) {
+      try { fs.unlinkSync(filepath); } catch { /* ignore missing files */ }
+    }
+
+    res.json({ ok: true, message: 'Client account deleted' });
   } catch (err) {
     next(err);
   }

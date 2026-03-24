@@ -239,6 +239,68 @@ export async function requestPasswordReset(req: Request, res: Response, next: Ne
   }
 }
 
+export async function updateProfile(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.userId;
+    const { name, email, phone, company_name, website_url } = req.body;
+
+    const updates: string[] = [];
+    const params: unknown[] = [];
+    let i = 1;
+
+    if (name !== undefined) { updates.push(`name = $${i++}`); params.push(name); }
+    if (email !== undefined) { updates.push(`email = $${i++}`); params.push(email); }
+    if (phone !== undefined) { updates.push(`phone = $${i++}`); params.push(phone || null); }
+    if (company_name !== undefined) { updates.push(`company_name = $${i++}`); params.push(company_name || null); }
+    if (website_url !== undefined) { updates.push(`website_url = $${i++}`); params.push(website_url || null); }
+
+    if (updates.length === 0) throw new AppError('No fields to update', 400);
+
+    if (email !== undefined) {
+      const existing = await query(`SELECT id FROM users WHERE email = $1 AND id != $2`, [email, userId]);
+      if (existing.rows.length > 0) throw new AppError('Email address is already in use', 409);
+    }
+
+    params.push(userId);
+    const result = await query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${i} RETURNING id, name, email, phone, company_name, website_url, role`,
+      params
+    );
+
+    if (result.rows.length === 0) throw new AppError('User not found', 404);
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function changePassword(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user!.userId;
+    const { current_password, new_password } = req.body;
+
+    if (!current_password || !new_password) {
+      throw new AppError('Current password and new password are required', 400);
+    }
+    if (new_password.length < 8) {
+      throw new AppError('New password must be at least 8 characters', 400);
+    }
+
+    const result = await query(`SELECT password_hash FROM users WHERE id = $1`, [userId]);
+    if (result.rows.length === 0) throw new AppError('User not found', 404);
+
+    const valid = await bcrypt.compare(current_password, result.rows[0].password_hash);
+    if (!valid) throw new AppError('Current password is incorrect', 400);
+
+    const newHash = await bcrypt.hash(new_password, 12);
+    await query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [newHash, userId]);
+
+    res.json({ ok: true, message: 'Password changed successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function confirmPasswordReset(req: Request, res: Response, next: NextFunction) {
   try {
     const { token, password } = req.body;

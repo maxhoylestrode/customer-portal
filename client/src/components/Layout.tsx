@@ -11,6 +11,8 @@ import {
   Menu,
   X,
   ChevronRight,
+  UserCircle,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface NavItem {
@@ -53,12 +55,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const clientNav: NavItem[] = [
     { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { to: '/tickets', label: 'My Tickets', icon: <Ticket className="w-4 h-4" /> },
+    { to: '/profile', label: 'Profile', icon: <UserCircle className="w-4 h-4" /> },
   ];
 
   const adminNav: NavItem[] = [
     { to: '/admin', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { to: '/admin/tickets', label: 'All Tickets', icon: <Ticket className="w-4 h-4" /> },
     { to: '/admin/users', label: 'Clients', icon: <Users className="w-4 h-4" /> },
+    { to: '/admin/accounts', label: 'Admin Accounts', icon: <ShieldCheck className="w-4 h-4" /> },
+    { to: '/admin/profile', label: 'Profile', icon: <UserCircle className="w-4 h-4" /> },
   ];
 
   const navItems = user?.role === 'admin' ? adminNav : clientNav;
