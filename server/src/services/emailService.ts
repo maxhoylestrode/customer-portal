@@ -61,7 +61,10 @@ export async function sendTicketStatusUpdate(
   clientName: string,
   ticketId: number,
   ticketTitle: string,
-  newStatus: string
+  newStatus: string,
+  priority: string,
+  scopeFlag: string,
+  adminNotes?: string | null
 ) {
   const statusLabels: Record<string, string> = {
     pending: 'Pending',
@@ -70,13 +73,51 @@ export async function sendTicketStatusUpdate(
     out_of_scope: 'Out of Scope',
   };
 
+  const priorityLabels: Record<string, string> = {
+    low: 'Low',
+    normal: 'Normal',
+    high: 'High',
+  };
+
+  const scopeLabels: Record<string, string> = {
+    unknown: 'Unknown',
+    in_scope: 'In Scope',
+    out_of_scope: 'Out of Scope',
+  };
+
+  const statusColors: Record<string, string> = {
+    pending: '#b45309',
+    in_progress: '#1d4ed8',
+    complete: '#15803d',
+    out_of_scope: '#6b7280',
+  };
+
+  const statusColor = statusColors[newStatus] || '#0D3040';
+  const statusLabel = statusLabels[newStatus] || newStatus;
+
+  const notesRow = adminNotes
+    ? `<tr>
+        <td style="color:#4A4A4A;padding-top:8px;border-top:1px solid #e2e8f0;">
+          <strong>Notes from Apex Studio:</strong><br>
+          <span style="white-space:pre-wrap;">${adminNotes}</span>
+        </td>
+      </tr>`
+    : '';
+
   const html = brandedEmail(
     'Your Ticket Has Been Updated',
     `<p style="color:#4A4A4A;line-height:1.6;">Hi ${clientName},</p>
-    <p style="color:#4A4A4A;line-height:1.6;">The status of your support ticket has been updated.</p>
-    <table style="width:100%;margin:16px 0;background:#f4f8fb;border-radius:6px;padding:16px;border-left:4px solid #0D3040;">
-      <tr><td style="color:#4A4A4A;padding-bottom:8px;"><strong>Ticket:</strong> #${ticketId} — ${ticketTitle}</td></tr>
-      <tr><td style="color:#4A4A4A;"><strong>New Status:</strong> ${statusLabels[newStatus] || newStatus}</td></tr>
+    <p style="color:#4A4A4A;line-height:1.6;">Your maintenance ticket has been updated by our team. Here is a summary of the current details:</p>
+    <table style="width:100%;margin:16px 0;background:#f4f8fb;border-radius:6px;padding:16px;border-left:4px solid ${statusColor};">
+      <tr><td style="color:#4A4A4A;padding-bottom:10px;font-size:15px;"><strong>Ticket #${ticketId}:</strong> ${ticketTitle}</td></tr>
+      <tr>
+        <td style="padding-bottom:8px;">
+          <span style="background:${statusColor};color:#ffffff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;">${statusLabel}</span>
+        </td>
+      </tr>
+      <tr><td style="color:#4A4A4A;padding-bottom:6px;"><strong>Priority:</strong> ${priorityLabels[priority] || priority}</td></tr>
+      <tr><td style="color:#4A4A4A;padding-bottom:6px;"><strong>Scope:</strong> ${scopeLabels[scopeFlag] || scopeFlag}</td></tr>
+      ${notesRow}
     </table>
     <a href="${CLIENT_URL}/tickets/${ticketId}" style="display:inline-block;background:#0D3040;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px;">View Ticket</a>`
   );
@@ -84,7 +125,7 @@ export async function sendTicketStatusUpdate(
   await transporter.sendMail({
     from: FROM,
     to,
-    subject: `Ticket Update: ${ticketTitle}`,
+    subject: `Ticket #${ticketId} Updated — ${statusLabel}`,
     html,
   });
 }

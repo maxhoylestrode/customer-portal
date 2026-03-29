@@ -172,11 +172,14 @@ export async function updateTicket(req: Request, res: Response, next: NextFuncti
             `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
             [ticketId, userId, 'status_changed', `Status changed from "${ticket.status}" to "${status}"`]
           );
-          // Notify client
+          // Notify client with full ticket details
           const clientResult = await query(`SELECT name, email FROM users WHERE id = $1`, [ticket.user_id]);
           if (clientResult.rows.length > 0) {
             const { name, email } = clientResult.rows[0];
-            sendTicketStatusUpdate(email, name, ticketId, ticket.title, status).catch(console.error);
+            const finalPriority = req.body.priority !== undefined ? req.body.priority : ticket.priority;
+            const finalScope = req.body.scope_flag !== undefined ? req.body.scope_flag : ticket.scope_flag;
+            const finalNotes = req.body.admin_notes !== undefined ? req.body.admin_notes : ticket.admin_notes;
+            sendTicketStatusUpdate(email, name, ticketId, ticket.title, status, finalPriority, finalScope, finalNotes).catch(console.error);
           }
         }
       }
