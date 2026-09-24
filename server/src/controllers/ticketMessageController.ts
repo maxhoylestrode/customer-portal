@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendNewTicketMessage } from '../services/emailService';
 import { CLIENT_URL, ADMIN_EMAIL } from '../config/mailer';
+import { sendPushToUser, sendPushToRole } from '../services/pushService';
 
 export async function listMessages(req: Request, res: Response, next: NextFunction) {
   try {
@@ -55,7 +56,7 @@ export async function createMessage(req: Request, res: Response, next: NextFunct
       include: { user: { select: { id: true, name: true, role: true } } },
     });
 
-    // Notify whichever side didn't send the message
+    // Notify whichever side didn't send the message — email (unchanged) and push
     if (role === 'client') {
       sendNewTicketMessage(
         ADMIN_EMAIL,
@@ -66,6 +67,11 @@ export async function createMessage(req: Request, res: Response, next: NextFunct
         message.trim(),
         `${CLIENT_URL}/admin/tickets/${ticketId}`
       ).catch(console.error);
+      sendPushToRole('admin', {
+        title: `New message — Ticket #${ticketId}`,
+        body: `${ticket.user.name}: ${message.trim()}`,
+        url: `/admin/tickets/${ticketId}`,
+      }).catch(console.error);
     } else {
       sendNewTicketMessage(
         ticket.user.email,
@@ -76,6 +82,11 @@ export async function createMessage(req: Request, res: Response, next: NextFunct
         message.trim(),
         `${CLIENT_URL}/tickets/${ticketId}`
       ).catch(console.error);
+      sendPushToUser(ticket.user.id, {
+        title: `New message — Ticket #${ticketId}`,
+        body: `${created.user.name}: ${message.trim()}`,
+        url: `/tickets/${ticketId}`,
+      }).catch(console.error);
     }
 
     res.status(201).json({

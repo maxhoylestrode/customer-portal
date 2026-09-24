@@ -30,10 +30,11 @@ model User {
   passwordResetExpires DateTime? @map("password_reset_expires") @db.Timestamptz
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  tickets        Ticket[]
-  ticketActivity TicketActivity[]
-  ticketMessages TicketMessage[]
-  refreshTokens  RefreshToken[]
+  tickets           Ticket[]
+  ticketActivity    TicketActivity[]
+  ticketMessages    TicketMessage[]
+  refreshTokens     RefreshToken[]
+  pushSubscriptions PushSubscription[]
 
   // staff-portal relations
   assignedProjects Project[]           @relation("ProjectAssignees")
@@ -128,6 +129,21 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+// One row per browser/device a user has enabled push notifications on —
+// a user can have several (phone, laptop, etc).
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  endpoint  String   @unique @db.VarChar(500)
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
 }
 
 // ─────────────────────────────────────────────────────────────

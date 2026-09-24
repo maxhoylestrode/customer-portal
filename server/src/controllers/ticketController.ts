@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendNewTicketNotification, sendTicketStatusUpdate } from '../services/emailService';
+import { sendPushToUser, sendPushToRole } from '../services/pushService';
 import path from 'path';
 import fs from 'fs';
 
@@ -127,6 +128,11 @@ export async function createTicket(req: Request, res: Response, next: NextFuncti
     if (user) {
       sendNewTicketNotification(ticket.id, ticket.title, user.name, user.email).catch(console.error);
     }
+    sendPushToRole('admin', {
+      title: 'New ticket submitted',
+      body: `${user?.name || 'A client'}: ${ticket.title}`,
+      url: `/admin/tickets/${ticket.id}`,
+    }).catch(console.error);
 
     res.status(201).json({ ticket: serializeTicket(ticket) });
   } catch (err) {
@@ -230,6 +236,11 @@ export async function updateTicket(req: Request, res: Response, next: NextFuncti
               finalScope,
               finalNotes
             ).catch(console.error);
+            sendPushToUser(ticket.userId, {
+              title: `Ticket #${ticketId} updated`,
+              body: `${ticket.title} — now ${status.replace('_', ' ')}`,
+              url: `/tickets/${ticketId}`,
+            }).catch(console.error);
           }
         }
       }

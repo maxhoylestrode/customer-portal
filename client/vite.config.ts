@@ -6,6 +6,17 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // Custom service worker (src/sw.ts) instead of the auto-generated one —
+      // needed for the push/notificationclick handlers. It still precaches
+      // the app shell via workbox-precaching; see src/sw.ts for the "never
+      // cache /api" reasoning (there's no fetch handler for it at all, so
+      // those requests just pass straight through to the network).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+      },
       registerType: 'autoUpdate',
       includeAssets: ['icons/favicon-32.png', 'icons/apple-touch-icon.png'],
       manifest: {
@@ -20,18 +31,6 @@ export default defineConfig({
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
-      workbox: {
-        // This is a live ticket/CRM/chat app — never serve API responses
-        // from cache. Only the app shell (JS/CSS/HTML) is precached, so the
-        // app opens instantly; all data still comes fresh from the network.
-        navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [
-          {
-            urlPattern: /^\/api\//,
-            handler: 'NetworkOnly',
-          },
         ],
       },
       devOptions: {

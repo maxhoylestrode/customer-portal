@@ -156,8 +156,26 @@ This works identically for the client ticket portal and the staff CRM — whoeve
 Implementation (`client/vite-plugin-pwa` in `vite.config.ts`):
 - The manifest (name, icons, `display: "standalone"`) is generated at build time — nothing to configure per-deploy.
 - Icons live in `client/public/icons/`, generated from `client/public/logo.png`. Regenerate them if the logo changes (any image-resize tool works — 192×192, 512×512, a 512×512 maskable variant with ~30% padding, a 180×180 apple-touch-icon, and a 32×32 favicon).
-- A service worker precaches the built app shell (JS/CSS/HTML) so the app opens instantly, but **every `/api/*` request is `NetworkOnly`** — the service worker never serves ticket/CRM/chat data from cache, only the static shell. That's deliberate: this is a live data app, not a content site.
+- A service worker (`client/src/sw.ts`, custom — not auto-generated, since it needs `push`/`notificationclick` handlers) precaches the built app shell (JS/CSS/HTML) so the app opens instantly. There's no fetch handler for anything else, so **every `/api/*` request passes straight through to the network** — the service worker never serves ticket/CRM/chat data from cache, only the static shell. That's deliberate: this is a live data app, not a content site.
 - `npm run build && npm run preview` serves the production build locally (with the same `/api` proxy as `dev`) if you want to test the installed-app experience before deploying.
+
+### Push Notifications
+
+Both sides can opt in from their Profile page ("Push Notifications" → Turn on), which requests browser notification permission and registers a subscription per device:
+
+| Who | Notified when |
+|-----|----------------|
+| Admin | A new ticket comes in; a client sends a chat message |
+| Client | Their ticket's status changes; admin replies to their chat message |
+
+This is in addition to the existing email notifications, not a replacement — email keeps going to `ADMIN_EMAIL` / the client's account email exactly as before.
+
+Setup:
+1. Generate a VAPID key pair once: `node -e "console.log(require('web-push').generateVAPIDKeys())"`
+2. Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` in `server/.env` (see `.env.example`). Without these, push is silently disabled (`/api/push/vapid-public-key` reports `enabled: false`) — everything else keeps working.
+3. That's it — no third-party push service account needed. Web Push delivers through the browser vendor's own infrastructure (Chrome/Edge → Google, Firefox → Mozilla, Safari → Apple); the VAPID keys are how your server authenticates to them, not an API key you sign up for.
+
+A subscription that a push service reports as gone (the browser uninstalled, permission revoked, etc.) is deleted automatically the next time a push is attempted against it.
 
 ---
 
@@ -208,6 +226,8 @@ Roles: `admin` (full access), `staff` (no client-role restrictions), `sales` (bl
 | `GET/POST /api/meetings`, `PUT/DELETE /api/meetings/:id` | Booked meetings |
 | `GET /api/users` | List internal accounts (assignee pickers) |
 | `GET /api/search?q=` | Global search across clients, notes, and (role-permitting) tickets/projects |
+| `GET /api/push/vapid-public-key` | Public key the browser needs to subscribe |
+| `POST/DELETE /api/push/subscribe`, `/unsubscribe` | Register/remove a push subscription for this device (client or admin) |
 
 ---
 
