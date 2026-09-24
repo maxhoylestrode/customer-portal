@@ -29,11 +29,22 @@ cd ../client && npm install
 
 ### 2. Database
 
-Create a PostgreSQL database:
+The schema is managed with Prisma. `database/schema.sql` is kept for reference only (it documents the original table shapes) — migrations are the source of truth.
+
+**New setup:**
 ```bash
 createdb apex_portal
-psql -d apex_portal -f database/schema.sql
+cd server && npx prisma migrate deploy
 ```
+
+**Existing database (upgrading from before the staff-portal merge):**
+Your tables already match the `20260924000000_baseline` migration, so mark it applied instead of running it, then deploy the rest:
+```bash
+cd server
+npx prisma migrate resolve --applied 20260924000000_baseline
+npx prisma migrate deploy
+```
+This only adds new tables (clients, projects, files, notes, meetings, etc.) — it never touches or drops your existing `users`/`tickets`/`attachments`/`ticket_activity`/`refresh_tokens` data.
 
 ### 3. Environment variables
 

@@ -2,22 +2,33 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import fs from 'fs';
-import { query } from '../config/db';
+import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendInviteEmail } from '../services/emailService';
 
 export async function listUsers(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await query(
-      `SELECT id, name, email, phone, company_name, website_url, role, is_active,
-              invite_token IS NOT NULL AND invite_token_expires > NOW() as has_pending_invite,
-              password_reset_token IS NOT NULL AND password_reset_expires > NOW() as has_pending_reset,
-              created_at
-       FROM users
-       WHERE role = 'client'
-       ORDER BY created_at DESC`
-    );
-    res.json({ users: result.rows });
+    const now = new Date();
+    const users = await prisma.user.findMany({
+      where: { role: 'client' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      users: users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        company_name: u.companyName,
+        website_url: u.websiteUrl,
+        role: u.role,
+        is_active: u.isActive,
+        has_pending_invite: !!(u.inviteToken && u.inviteTokenExpires && u.inviteTokenExpires > now),
+        has_pending_reset: !!(u.passwordResetToken && u.passwordResetExpires && u.passwordResetExpires > now),
+        created_at: u.createdAt,
+      })),
+    });
   } catch (err) {
     next(err);
   }
@@ -30,21 +41,25 @@ export async function createUser(req: Request, res: Response, next: NextFunction
     if (!email) throw new AppError('Email is required', 400);
     if (!name) throw new AppError('Name is required', 400);
 
-    // Generate invite token
     const rawToken = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
 
-    // Create placeholder user (no password yet)
-    const result = await query(
-      `INSERT INTO users (name, email, phone, company_name, website_url, client_notes, password_hash, role, invite_token, invite_token_expires)
-       VALUES ($1, $2, $3, $4, $5, $6, '', 'client', $7, $8)
-       RETURNING id, name, email`,
-      [name, email, phone || null, company_name || null, website_url || null, client_notes || null, rawToken, expires]
-    );
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        companyName: company_name || null,
+        websiteUrl: website_url || null,
+        clientNotes: client_notes || null,
+        passwordHash: '',
+        role: 'client',
+        inviteToken: rawToken,
+        inviteTokenExpires: expires,
+      },
+      select: { id: true, name: true, email: true },
+    });
 
-    const user = result.rows[0];
-
-    // Send invite email
     await sendInviteEmail(email, rawToken);
 
     res.status(201).json({ user, message: 'Invite sent to ' + email });
@@ -61,25 +76,28 @@ export async function generateInviteLink(req: Request, res: Response, next: Next
     const rawToken = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
-    // Check if user with that email already exists as a full user
-    const existing = await query(`SELECT id, password_hash FROM users WHERE email = $1`, [email]);
-    if (existing.rows.length > 0 && existing.rows[0].password_hash) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing && existing.passwordHash) {
       throw new AppError('A user with that email already has an account', 409);
     }
 
-    if (existing.rows.length > 0) {
-      // Update existing placeholder
-      await query(
-        `UPDATE users SET invite_token=$1, invite_token_expires=$2 WHERE email=$3`,
-        [rawToken, expires, email]
-      );
+    if (existing) {
+      await prisma.user.update({
+        where: { email },
+        data: { inviteToken: rawToken, inviteTokenExpires: expires },
+      });
     } else {
-      // Create placeholder
       const safeName = name || email.split('@')[0];
-      await query(
-        `INSERT INTO users (name, email, password_hash, role, invite_token, invite_token_expires) VALUES ($1, $2, '', 'client', $3, $4)`,
-        [safeName, email, rawToken, expires]
-      );
+      await prisma.user.create({
+        data: {
+          name: safeName,
+          email,
+          passwordHash: '',
+          role: 'client',
+          inviteToken: rawToken,
+          inviteTokenExpires: expires,
+        },
+      });
     }
 
     await sendInviteEmail(email, rawToken);
@@ -94,28 +112,33 @@ export async function updateUser(req: Request, res: Response, next: NextFunction
     const userId = parseInt(req.params.id);
     const { name, email, phone, company_name, website_url, client_notes, is_active } = req.body;
 
-    const updates: string[] = [];
-    const params: unknown[] = [];
-    let i = 1;
+    const data: Record<string, unknown> = {};
+    if (name !== undefined) data.name = name;
+    if (email !== undefined) data.email = email;
+    if (phone !== undefined) data.phone = phone || null;
+    if (company_name !== undefined) data.companyName = company_name || null;
+    if (website_url !== undefined) data.websiteUrl = website_url || null;
+    if (client_notes !== undefined) data.clientNotes = client_notes || null;
+    if (is_active !== undefined) data.isActive = is_active;
 
-    if (name !== undefined) { updates.push(`name = $${i++}`); params.push(name); }
-    if (email !== undefined) { updates.push(`email = $${i++}`); params.push(email); }
-    if (phone !== undefined) { updates.push(`phone = $${i++}`); params.push(phone || null); }
-    if (company_name !== undefined) { updates.push(`company_name = $${i++}`); params.push(company_name || null); }
-    if (website_url !== undefined) { updates.push(`website_url = $${i++}`); params.push(website_url || null); }
-    if (client_notes !== undefined) { updates.push(`client_notes = $${i++}`); params.push(client_notes || null); }
-    if (is_active !== undefined) { updates.push(`is_active = $${i++}`); params.push(is_active); }
+    if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
 
-    if (updates.length === 0) throw new AppError('No fields to update', 400);
+    const user = await prisma.user.update({ where: { id: userId }, data }).catch(() => null);
+    if (!user) throw new AppError('User not found', 404);
 
-    params.push(userId);
-    const result = await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${i} RETURNING id, name, email, phone, company_name, website_url, client_notes, is_active, role`,
-      params
-    );
-
-    if (result.rows.length === 0) throw new AppError('User not found', 404);
-    res.json({ user: result.rows[0] });
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        company_name: user.companyName,
+        website_url: user.websiteUrl,
+        client_notes: user.clientNotes,
+        is_active: user.isActive,
+        role: user.role,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -124,28 +147,34 @@ export async function updateUser(req: Request, res: Response, next: NextFunction
 export async function getUser(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = parseInt(req.params.id);
-    const result = await query(
-      `SELECT id, name, email, phone, company_name, website_url, client_notes, role, is_active,
-              invite_token IS NOT NULL AND invite_token_expires > NOW() as has_pending_invite,
-              password_reset_token IS NOT NULL AND password_reset_expires > NOW() as has_pending_reset,
-              created_at
-       FROM users WHERE id = $1`,
-      [userId]
-    );
-    if (result.rows.length === 0) throw new AppError('User not found', 404);
+    const now = new Date();
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('User not found', 404);
 
-    // Also get ticket stats for this user
-    const stats = await query(
-      `SELECT
-        COUNT(*) FILTER (WHERE status = 'pending') as pending,
-        COUNT(*) FILTER (WHERE status = 'in_progress') as in_progress,
-        COUNT(*) FILTER (WHERE status = 'complete') as complete,
-        COUNT(*) as total
-       FROM tickets WHERE user_id = $1`,
-      [userId]
-    );
+    const [pending, in_progress, complete, total] = await Promise.all([
+      prisma.ticket.count({ where: { userId, status: 'pending' } }),
+      prisma.ticket.count({ where: { userId, status: 'in_progress' } }),
+      prisma.ticket.count({ where: { userId, status: 'complete' } }),
+      prisma.ticket.count({ where: { userId } }),
+    ]);
 
-    res.json({ user: result.rows[0], stats: stats.rows[0] });
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        company_name: user.companyName,
+        website_url: user.websiteUrl,
+        client_notes: user.clientNotes,
+        role: user.role,
+        is_active: user.isActive,
+        has_pending_invite: !!(user.inviteToken && user.inviteTokenExpires && user.inviteTokenExpires > now),
+        has_pending_reset: !!(user.passwordResetToken && user.passwordResetExpires && user.passwordResetExpires > now),
+        created_at: user.createdAt,
+      },
+      stats: { pending, in_progress, complete, total },
+    });
   } catch (err) {
     next(err);
   }
@@ -153,54 +182,79 @@ export async function getUser(req: Request, res: Response, next: NextFunction) {
 
 export async function getDashboardStats(req: Request, res: Response, next: NextFunction) {
   try {
-    const statsResult = await query(`
-      SELECT
-        COUNT(*) FILTER (WHERE status = 'pending') as pending,
-        COUNT(*) FILTER (WHERE status = 'in_progress') as in_progress,
-        COUNT(*) FILTER (WHERE status = 'complete' AND updated_at >= date_trunc('month', NOW())) as completed_this_month,
-        COUNT(*) FILTER (WHERE status = 'complete') as total_complete,
-        COUNT(*) FILTER (WHERE status = 'out_of_scope') as total_out_of_scope,
-        COUNT(*) as total
-      FROM tickets
-    `);
+    const [pending, in_progress, total_complete, total_out_of_scope, total, total_clients] = await Promise.all([
+      prisma.ticket.count({ where: { status: 'pending' } }),
+      prisma.ticket.count({ where: { status: 'in_progress' } }),
+      prisma.ticket.count({ where: { status: 'complete' } }),
+      prisma.ticket.count({ where: { status: 'out_of_scope' } }),
+      prisma.ticket.count(),
+      prisma.user.count({ where: { role: 'client', isActive: true } }),
+    ]);
 
-    const clientCount = await query(`SELECT COUNT(*) as total FROM users WHERE role = 'client' AND is_active = true`);
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const completed_this_month = await prisma.ticket.count({
+      where: { status: 'complete', updatedAt: { gte: startOfMonth } },
+    });
 
-    const recentActivity = await query(`
-      SELECT ta.*, t.title as ticket_title, u.name as user_name
-      FROM ticket_activity ta
-      JOIN tickets t ON ta.ticket_id = t.id
-      LEFT JOIN users u ON ta.user_id = u.id
-      ORDER BY ta.created_at DESC
-      LIMIT 20
-    `);
+    const recentActivityRows = await prisma.ticketActivity.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: { ticket: { select: { title: true } }, user: { select: { name: true } } },
+    });
 
-    const monthlyTrend = await query(`
-      SELECT
-        TO_CHAR(DATE_TRUNC('month', created_at), 'Mon YYYY') as month,
-        DATE_TRUNC('month', created_at) as month_date,
-        COUNT(*) as count
-      FROM tickets
-      WHERE created_at >= DATE_TRUNC('month', NOW() - INTERVAL '5 months')
-      GROUP BY DATE_TRUNC('month', created_at)
-      ORDER BY month_date ASC
-    `);
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+    const recentTickets = await prisma.ticket.findMany({
+      where: { createdAt: { gte: sixMonthsAgo } },
+      select: { createdAt: true },
+    });
+    const monthlyCounts = new Map<string, { month_date: Date; count: number }>();
+    for (const t of recentTickets) {
+      const key = `${t.createdAt.getFullYear()}-${t.createdAt.getMonth()}`;
+      const monthDate = new Date(t.createdAt.getFullYear(), t.createdAt.getMonth(), 1);
+      const existing = monthlyCounts.get(key);
+      if (existing) existing.count += 1;
+      else monthlyCounts.set(key, { month_date: monthDate, count: 1 });
+    }
+    const monthlyTrend = Array.from(monthlyCounts.values())
+      .sort((a, b) => a.month_date.getTime() - b.month_date.getTime())
+      .map((m) => ({
+        month: m.month_date.toLocaleString('en-US', { month: 'short', year: 'numeric' }),
+        month_date: m.month_date,
+        count: m.count,
+      }));
 
-    const priorityBreakdown = await query(`
-      SELECT priority, COUNT(*) as count
-      FROM tickets
-      GROUP BY priority
-      ORDER BY priority
-    `);
+    const priorityGroups = await prisma.ticket.groupBy({ by: ['priority'], _count: { priority: true } });
+    const priorityBreakdown = priorityGroups
+      .map((p) => ({ priority: p.priority, count: p._count.priority }))
+      .sort((a, b) => a.priority.localeCompare(b.priority));
 
     res.json({
       stats: {
-        ...statsResult.rows[0],
-        total_clients: clientCount.rows[0].total,
+        pending,
+        in_progress,
+        completed_this_month,
+        total_complete,
+        total_out_of_scope,
+        total,
+        total_clients,
       },
-      recentActivity: recentActivity.rows,
-      monthlyTrend: monthlyTrend.rows,
-      priorityBreakdown: priorityBreakdown.rows,
+      recentActivity: recentActivityRows.map((a) => ({
+        id: a.id,
+        ticket_id: a.ticketId,
+        user_id: a.userId,
+        action: a.action,
+        detail: a.detail,
+        created_at: a.createdAt,
+        ticket_title: a.ticket.title,
+        user_name: a.user?.name,
+      })),
+      monthlyTrend,
+      priorityBreakdown,
     });
   } catch (err) {
     next(err);
@@ -209,10 +263,19 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
 
 export async function listAdmins(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await query(
-      `SELECT id, name, email, is_active, created_at FROM users WHERE role = 'admin' ORDER BY created_at ASC`
-    );
-    res.json({ admins: result.rows });
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin' },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json({
+      admins: admins.map((a) => ({
+        id: a.id,
+        name: a.name,
+        email: a.email,
+        is_active: a.isActive,
+        created_at: a.createdAt,
+      })),
+    });
   } catch (err) {
     next(err);
   }
@@ -224,16 +287,16 @@ export async function createAdmin(req: Request, res: Response, next: NextFunctio
     if (!name || !email || !password) throw new AppError('Name, email, and password are required', 400);
     if (password.length < 8) throw new AppError('Password must be at least 8 characters', 400);
 
-    const existing = await query(`SELECT id FROM users WHERE email = $1`, [email]);
-    if (existing.rows.length > 0) throw new AppError('An account with that email already exists', 409);
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) throw new AppError('An account with that email already exists', 409);
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const result = await query(
-      `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'admin') RETURNING id, name, email, role, created_at`,
-      [name, email, passwordHash]
-    );
+    const user = await prisma.user.create({
+      data: { name, email, passwordHash, role: 'admin' },
+      select: { id: true, name: true, email: true, role: true, createdAt: true },
+    });
 
-    res.status(201).json({ user: result.rows[0] });
+    res.status(201).json({ user: { ...user, created_at: user.createdAt } });
   } catch (err) {
     next(err);
   }
@@ -243,23 +306,25 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
   try {
     const userId = parseInt(req.params.id);
 
-    const userResult = await query(`SELECT id, role FROM users WHERE id = $1`, [userId]);
-    if (userResult.rows.length === 0) throw new AppError('User not found', 404);
-    if (userResult.rows[0].role !== 'client') throw new AppError('Cannot delete admin accounts', 403);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('User not found', 404);
+    if (user.role !== 'client') throw new AppError('Cannot delete admin accounts', 403);
 
-    // Collect attachment filepaths before cascade-delete removes the DB records
-    const attachmentResult = await query(
-      `SELECT a.filepath FROM attachments a JOIN tickets t ON a.ticket_id = t.id WHERE t.user_id = $1`,
-      [userId]
-    );
-    const filepaths = attachmentResult.rows.map((r: { filepath: string }) => r.filepath);
+    const attachments = await prisma.attachment.findMany({
+      where: { ticket: { userId } },
+      select: { filepath: true },
+    });
+    const filepaths = attachments.map((a) => a.filepath);
 
-    // Delete user — DB cascades handle tickets, attachments, ticket_activity, refresh_tokens
-    await query(`DELETE FROM users WHERE id = $1`, [userId]);
+    // DB cascades handle tickets, attachments, ticket_activity, refresh_tokens
+    await prisma.user.delete({ where: { id: userId } });
 
-    // Remove physical files
     for (const filepath of filepaths) {
-      try { fs.unlinkSync(filepath); } catch { /* ignore missing files */ }
+      try {
+        fs.unlinkSync(filepath);
+      } catch {
+        /* ignore missing files */
+      }
     }
 
     res.json({ ok: true, message: 'Client account deleted' });

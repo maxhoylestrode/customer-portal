@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Core (existing customer-portal tables — column names unchanged
+// so this schema maps onto the database you already have)
+// ─────────────────────────────────────────────────────────────
+
+model User {
+  id                   Int       @id @default(autoincrement())
+  name                 String    @db.VarChar(100)
+  email                String    @unique @db.VarChar(255)
+  phone                String?   @db.VarChar(30)
+  companyName          String?   @map("company_name") @db.VarChar(150)
+  websiteUrl           String?   @map("website_url") @db.VarChar(255)
+  clientNotes          String?   @map("client_notes")
+  passwordHash         String    @map("password_hash") @db.VarChar(255)
+  // "client" | "admin" | "staff" | "sales"
+  role                 String    @default("client") @db.VarChar(20)
+  isActive             Boolean   @default(true) @map("is_active")
+  inviteToken          String?   @map("invite_token") @db.VarChar(255)
+  inviteTokenExpires   DateTime? @map("invite_token_expires") @db.Timestamptz
+  passwordResetToken   String?   @map("password_reset_token") @db.VarChar(255)
+  passwordResetExpires DateTime? @map("password_reset_expires") @db.Timestamptz
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  tickets        Ticket[]
+  ticketActivity TicketActivity[]
+  refreshTokens  RefreshToken[]
+
+  // staff-portal relations
+  assignedProjects Project[]           @relation("ProjectAssignees")
+  storageFiles     StorageFile[]
+  clientNoteEntries Note[]
+  generalNotes     GeneralNote[]
+  managedClients   Client[]            @relation("SalesPerson")
+  availableSlots   AvailableSlot[]     @relation("AvailableSlots")
+  staffMeetings    Meeting[]           @relation("StaffMeetings")
+  bookedMeetings   Meeting[]           @relation("BookedMeetings")
+  storageAccess    StorageFileAccess[]
+  // links a client-role portal login to the staff-managed Client profile
+  clientProfile    Client?             @relation("ClientPortalUser")
+
+  @@map("users")
+}
+
+model Ticket {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  title       String   @db.VarChar(255)
+  description String
+  status      String   @default("pending") @db.VarChar(30)
+  scopeFlag   String   @default("unknown") @map("scope_flag") @db.VarChar(20)
+  priority    String   @default("normal") @db.VarChar(20)
+  adminNotes  String?  @map("admin_notes")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments Attachment[]
+  activity    TicketActivity[]
+
+  @@map("tickets")
+}
+
+model Attachment {
+  id         Int      @id @default(autoincrement())
+  ticketId   Int      @map("ticket_id")
+  filename   String   @db.VarChar(255)
+  filepath   String   @db.VarChar(500)
+  uploadedAt DateTime @default(now()) @map("uploaded_at") @db.Timestamptz
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+model TicketActivity {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int      @map("ticket_id")
+  userId    Int?     @map("user_id")
+  action    String   @db.VarChar(100)
+  detail    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@map("ticket_activity")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @db.VarChar(500)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Staff-portal functionality (new tables, additive only)
+// ─────────────────────────────────────────────────────────────
+
+model Client {
+  id            Int      @id @default(autoincrement())
+  name          String
+  company       String?
+  email         String?
+  phone         String?
+  address       String?
+  notes         String?
+  tags          String[] @default([])
+  hostingTier   String?  @map("hosting_tier")
+  avatarPath    String?  @map("avatar_path")
+  salesPersonId Int?     @map("sales_person_id")
+  // optional link to a client-role User who can log into the portal
+  portalUserId  Int?     @unique @map("portal_user_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  files       File[]
+  projects    Project[]
+  noteEntries Note[]
+  salesPerson User?     @relation("SalesPerson", fields: [salesPersonId], references: [id], onDelete: SetNull)
+  portalUser  User?     @relation("ClientPortalUser", fields: [portalUserId], references: [id], onDelete: SetNull)
+
+  @@map("clients")
+}
+
+model Note {
+  id        Int      @id @default(autoincrement())
+  clientId  Int      @map("client_id")
+  title     String?
+  content   String
+  createdBy Int?     @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  author User?  @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@map("client_notes_log")
+}
+
+model File {
+  id         Int      @id @default(autoincrement())
+  clientId   Int      @map("client_id")
+  filename   String
+  filepath   String
+  mimetype   String?
+  size       Int?
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("client_files")
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  clientId    Int       @map("client_id")
+  name        String
+  description String?
+  status      String    @default("active")
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  client        Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  milestones    Milestone[]
+  assignedUsers User[]      @relation("ProjectAssignees")
+
+  @@map("projects")
+}
+
+model Milestone {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  title     String
+  date      DateTime
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("milestones")
+}
+
+model StorageFile {
+  id         Int      @id @default(autoincrement())
+  filename   String
+  filepath   String
+  mimetype   String?
+  size       Int?
+  folder     String   @default("General")
+  // "none" | "everyone" | "specific"
+  shareMode  String   @default("everyone") @map("share_mode")
+  uploadedBy Int      @map("uploaded_by")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  uploader   User                @relation(fields: [uploadedBy], references: [id])
+  accessList StorageFileAccess[]
+
+  @@map("storage_files")
+}
+
+model StorageFileAccess {
+  id     Int @id @default(autoincrement())
+  fileId Int @map("file_id")
+  userId Int @map("user_id")
+
+  file StorageFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, userId])
+  @@map("storage_file_access")
+}
+
+model AvailableSlot {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  date      DateTime // stored as UTC midnight for the day
+  startTime String   @map("start_time") // "09:00"
+  endTime   String   @map("end_time") // "10:00"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User     @relation("AvailableSlots", fields: [userId], references: [id], onDelete: Cascade)
+  meeting Meeting? // at most one meeting per slot
+
+  @@unique([userId, date, startTime])
+  @@map("available_slots")
+}
+
+model Meeting {
+  id          Int            @id @default(autoincrement())
+  staffUserId Int            @map("staff_user_id")
+  slotId      Int?           @unique @map("slot_id")
+  date        DateTime // the day of the meeting (UTC midnight)
+  startTime   String?        @map("start_time")
+  endTime     String?        @map("end_time")
+  clientName  String         @map("client_name")
+  clientPhone String?        @map("client_phone")
+  clientEmail String?        @map("client_email")
+  notes       String?
+  serviceType String         @map("service_type") // "Websites" | "Cyber Essentials"
+  createdBy   Int?           @map("created_by")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  staffUser User           @relation("StaffMeetings", fields: [staffUserId], references: [id], onDelete: Cascade)
+  bookedBy  User?          @relation("BookedMeetings", fields: [createdBy], references: [id], onDelete: SetNull)
+  slot      AvailableSlot? @relation(fields: [slotId], references: [id], onDelete: SetNull)
+
+  @@map("meetings")
+}
+
+model GeneralNote {
+  id        Int      @id @default(autoincrement())
+  title     String?
+  content   String
+  isPrivate Boolean  @default(false) @map("is_private")
+  createdBy Int?     @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  author User? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@map("general_notes")
+}

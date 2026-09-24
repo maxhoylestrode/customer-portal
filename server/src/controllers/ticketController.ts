@@ -1,53 +1,82 @@
 import { Request, Response, NextFunction } from 'express';
-import { query } from '../config/db';
+import { Prisma } from '@prisma/client';
+import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendNewTicketNotification, sendTicketStatusUpdate } from '../services/emailService';
 import path from 'path';
 import fs from 'fs';
+
+const SORTABLE: Record<string, keyof Prisma.TicketOrderByWithRelationInput> = {
+  created_at: 'createdAt',
+  updated_at: 'updatedAt',
+  priority: 'priority',
+  status: 'status',
+};
+
+function serializeTicket(t: {
+  id: number;
+  userId: number;
+  title: string;
+  description: string;
+  status: string;
+  scopeFlag: string;
+  priority: string;
+  adminNotes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: { name: string; email: string; companyName: string | null; websiteUrl?: string | null };
+  _count?: { attachments: number };
+}) {
+  return {
+    id: t.id,
+    user_id: t.userId,
+    title: t.title,
+    description: t.description,
+    status: t.status,
+    scope_flag: t.scopeFlag,
+    priority: t.priority,
+    admin_notes: t.adminNotes,
+    created_at: t.createdAt,
+    updated_at: t.updatedAt,
+    ...(t.user
+      ? {
+          client_name: t.user.name,
+          client_email: t.user.email,
+          company_name: t.user.companyName,
+          ...(t.user.websiteUrl !== undefined ? { website_url: t.user.websiteUrl } : {}),
+        }
+      : {}),
+    ...(t._count ? { attachment_count: t._count.attachments } : {}),
+  };
+}
 
 export async function getTickets(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId, role } = req.user!;
     const { status, scope_flag, client_id, sort = 'created_at', order = 'desc' } = req.query;
 
-    const allowedSort = ['created_at', 'updated_at', 'priority', 'status'];
-    const sortCol = allowedSort.includes(sort as string) ? sort : 'created_at';
-    const sortDir = order === 'asc' ? 'ASC' : 'DESC';
+    const sortField = SORTABLE[sort as string] || 'createdAt';
+    const sortDir = order === 'asc' ? 'asc' : 'desc';
 
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-    let paramIdx = 1;
-
+    const where: Prisma.TicketWhereInput = {};
     if (role === 'client') {
-      conditions.push(`t.user_id = $${paramIdx++}`);
-      params.push(userId);
+      where.userId = userId;
     } else if (client_id) {
-      conditions.push(`t.user_id = $${paramIdx++}`);
-      params.push(client_id);
+      where.userId = parseInt(client_id as string);
     }
+    if (status) where.status = status as string;
+    if (scope_flag && role === 'admin') where.scopeFlag = scope_flag as string;
 
-    if (status) {
-      conditions.push(`t.status = $${paramIdx++}`);
-      params.push(status);
-    }
-    if (scope_flag && role === 'admin') {
-      conditions.push(`t.scope_flag = $${paramIdx++}`);
-      params.push(scope_flag);
-    }
+    const tickets = await prisma.ticket.findMany({
+      where,
+      orderBy: { [sortField]: sortDir },
+      include: {
+        user: { select: { name: true, email: true, companyName: true } },
+        _count: { select: { attachments: true } },
+      },
+    });
 
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const result = await query(
-      `SELECT t.*, u.name as client_name, u.email as client_email, u.company_name,
-              (SELECT COUNT(*) FROM attachments WHERE ticket_id = t.id)::int as attachment_count
-       FROM tickets t
-       JOIN users u ON t.user_id = u.id
-       ${where}
-       ORDER BY t.${sortCol} ${sortDir}`,
-      params
-    );
-
-    res.json({ tickets: result.rows });
+    res.json({ tickets: tickets.map(serializeTicket) });
   } catch (err) {
     next(err);
   }
@@ -61,41 +90,39 @@ export async function createTicket(req: Request, res: Response, next: NextFuncti
     if (!title?.trim()) throw new AppError('Title is required', 400);
     if (!description?.trim()) throw new AppError('Description is required', 400);
 
-    const result = await query(
-      `INSERT INTO tickets (user_id, title, description) VALUES ($1, $2, $3) RETURNING *`,
-      [userId, title.trim(), description.trim()]
-    );
-    const ticket = result.rows[0];
+    const ticket = await prisma.ticket.create({
+      data: { userId, title: title.trim(), description: description.trim() },
+    });
 
-    // Log activity
-    await query(
-      `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-      [ticket.id, userId, 'ticket_created', `Ticket "${title}" submitted`]
-    );
+    await prisma.ticketActivity.create({
+      data: { ticketId: ticket.id, userId, action: 'ticket_created', detail: `Ticket "${title}" submitted` },
+    });
 
-    // Handle file attachments
     const files = req.files as Express.Multer.File[];
     if (files && files.length > 0) {
-      for (const file of files) {
-        await query(
-          `INSERT INTO attachments (ticket_id, filename, filepath) VALUES ($1, $2, $3)`,
-          [ticket.id, file.originalname, file.filename]
-        );
-      }
-      await query(
-        `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-        [ticket.id, userId, 'attachment_uploaded', `${files.length} file(s) attached`]
+      await prisma.$transaction(
+        files.map((file) =>
+          prisma.attachment.create({
+            data: { ticketId: ticket.id, filename: file.originalname, filepath: file.filename },
+          })
+        )
       );
+      await prisma.ticketActivity.create({
+        data: {
+          ticketId: ticket.id,
+          userId,
+          action: 'attachment_uploaded',
+          detail: `${files.length} file(s) attached`,
+        },
+      });
     }
 
-    // Email admin
-    const userResult = await query(`SELECT name, email FROM users WHERE id = $1`, [userId]);
-    if (userResult.rows.length > 0) {
-      const { name, email } = userResult.rows[0];
-      sendNewTicketNotification(ticket.id, ticket.title, name, email).catch(console.error);
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+    if (user) {
+      sendNewTicketNotification(ticket.id, ticket.title, user.name, user.email).catch(console.error);
     }
 
-    res.status(201).json({ ticket });
+    res.status(201).json({ ticket: serializeTicket(ticket) });
   } catch (err) {
     next(err);
   }
@@ -106,37 +133,47 @@ export async function getTicket(req: Request, res: Response, next: NextFunction)
     const { userId, role } = req.user!;
     const ticketId = parseInt(req.params.id);
 
-    const result = await query(
-      `SELECT t.*, u.name as client_name, u.email as client_email, u.company_name, u.website_url
-       FROM tickets t JOIN users u ON t.user_id = u.id WHERE t.id = $1`,
-      [ticketId]
-    );
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { user: { select: { name: true, email: true, companyName: true, websiteUrl: true } } },
+    });
 
-    if (result.rows.length === 0) throw new AppError('Ticket not found', 404);
-    const ticket = result.rows[0];
+    if (!ticket) throw new AppError('Ticket not found', 404);
 
-    if (role === 'client' && ticket.user_id !== userId) {
+    if (role === 'client' && ticket.userId !== userId) {
       throw new AppError('Not authorised', 403);
     }
 
-    const attachments = await query(
-      `SELECT * FROM attachments WHERE ticket_id = $1 ORDER BY uploaded_at DESC`,
-      [ticketId]
-    );
+    const attachments = await prisma.attachment.findMany({
+      where: { ticketId },
+      orderBy: { uploadedAt: 'desc' },
+    });
 
-    const activity = await query(
-      `SELECT ta.*, u.name as user_name, u.role as user_role
-       FROM ticket_activity ta
-       LEFT JOIN users u ON ta.user_id = u.id
-       WHERE ta.ticket_id = $1
-       ORDER BY ta.created_at ASC`,
-      [ticketId]
-    );
+    const activity = await prisma.ticketActivity.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: 'asc' },
+      include: { user: { select: { name: true, role: true } } },
+    });
 
     res.json({
-      ticket,
-      attachments: attachments.rows,
-      activity: activity.rows,
+      ticket: serializeTicket(ticket),
+      attachments: attachments.map((a) => ({
+        id: a.id,
+        ticket_id: a.ticketId,
+        filename: a.filename,
+        filepath: a.filepath,
+        uploaded_at: a.uploadedAt,
+      })),
+      activity: activity.map((a) => ({
+        id: a.id,
+        ticket_id: a.ticketId,
+        user_id: a.userId,
+        action: a.action,
+        detail: a.detail,
+        created_at: a.createdAt,
+        user_name: a.user?.name,
+        user_role: a.user?.role,
+      })),
     });
   } catch (err) {
     next(err);
@@ -148,91 +185,86 @@ export async function updateTicket(req: Request, res: Response, next: NextFuncti
     const { userId, role } = req.user!;
     const ticketId = parseInt(req.params.id);
 
-    const existing = await query(`SELECT * FROM tickets WHERE id = $1`, [ticketId]);
-    if (existing.rows.length === 0) throw new AppError('Ticket not found', 404);
-    const ticket = existing.rows[0];
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new AppError('Ticket not found', 404);
 
-    if (role === 'client' && ticket.user_id !== userId) {
+    if (role === 'client' && ticket.userId !== userId) {
       throw new AppError('Not authorised', 403);
     }
 
-    const updates: string[] = [];
-    const params: unknown[] = [];
-    let paramIdx = 1;
+    const data: Prisma.TicketUpdateInput = {};
 
     if (role === 'admin') {
       const { status, scope_flag, priority, admin_notes } = req.body;
 
       if (status !== undefined) {
-        updates.push(`status = $${paramIdx++}`);
-        params.push(status);
+        data.status = status;
 
         if (status !== ticket.status) {
-          await query(
-            `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-            [ticketId, userId, 'status_changed', `Status changed from "${ticket.status}" to "${status}"`]
-          );
-          // Notify client with full ticket details
-          const clientResult = await query(`SELECT name, email FROM users WHERE id = $1`, [ticket.user_id]);
-          if (clientResult.rows.length > 0) {
-            const { name, email } = clientResult.rows[0];
-            const finalPriority = req.body.priority !== undefined ? req.body.priority : ticket.priority;
-            const finalScope = req.body.scope_flag !== undefined ? req.body.scope_flag : ticket.scope_flag;
-            const finalNotes = req.body.admin_notes !== undefined ? req.body.admin_notes : ticket.admin_notes;
-            sendTicketStatusUpdate(email, name, ticketId, ticket.title, status, finalPriority, finalScope, finalNotes).catch(console.error);
+          await prisma.ticketActivity.create({
+            data: {
+              ticketId,
+              userId,
+              action: 'status_changed',
+              detail: `Status changed from "${ticket.status}" to "${status}"`,
+            },
+          });
+          const client = await prisma.user.findUnique({ where: { id: ticket.userId }, select: { name: true, email: true } });
+          if (client) {
+            const finalPriority = priority !== undefined ? priority : ticket.priority;
+            const finalScope = scope_flag !== undefined ? scope_flag : ticket.scopeFlag;
+            const finalNotes = admin_notes !== undefined ? admin_notes : ticket.adminNotes;
+            sendTicketStatusUpdate(
+              client.email,
+              client.name,
+              ticketId,
+              ticket.title,
+              status,
+              finalPriority,
+              finalScope,
+              finalNotes
+            ).catch(console.error);
           }
         }
       }
       if (scope_flag !== undefined) {
-        updates.push(`scope_flag = $${paramIdx++}`);
-        params.push(scope_flag);
-        if (scope_flag !== ticket.scope_flag) {
-          await query(
-            `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-            [ticketId, userId, 'scope_updated', `Scope set to "${scope_flag}"`]
-          );
+        data.scopeFlag = scope_flag;
+        if (scope_flag !== ticket.scopeFlag) {
+          await prisma.ticketActivity.create({
+            data: { ticketId, userId, action: 'scope_updated', detail: `Scope set to "${scope_flag}"` },
+          });
         }
       }
       if (priority !== undefined) {
-        updates.push(`priority = $${paramIdx++}`);
-        params.push(priority);
+        data.priority = priority;
         if (priority !== ticket.priority) {
-          await query(
-            `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-            [ticketId, userId, 'priority_changed', `Priority set to "${priority}"`]
-          );
+          await prisma.ticketActivity.create({
+            data: { ticketId, userId, action: 'priority_changed', detail: `Priority set to "${priority}"` },
+          });
         }
       }
       if (admin_notes !== undefined) {
-        updates.push(`admin_notes = $${paramIdx++}`);
-        params.push(admin_notes);
-        await query(
-          `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-          [ticketId, userId, 'note_added', 'Admin notes updated']
-        );
+        data.adminNotes = admin_notes;
+        await prisma.ticketActivity.create({
+          data: { ticketId, userId, action: 'note_added', detail: 'Admin notes updated' },
+        });
       }
     } else {
-      // Client can only edit pending tickets
       if (ticket.status !== 'pending') {
         throw new AppError('You can only edit tickets that are still pending', 403);
       }
       const { title, description } = req.body;
-      if (title !== undefined) { updates.push(`title = $${paramIdx++}`); params.push(title); }
-      if (description !== undefined) { updates.push(`description = $${paramIdx++}`); params.push(description); }
+      if (title !== undefined) data.title = title;
+      if (description !== undefined) data.description = description;
     }
 
-    if (updates.length === 0) {
-      res.json({ ticket });
+    if (Object.keys(data).length === 0) {
+      res.json({ ticket: serializeTicket(ticket) });
       return;
     }
 
-    params.push(ticketId);
-    const updated = await query(
-      `UPDATE tickets SET ${updates.join(', ')} WHERE id = $${paramIdx} RETURNING *`,
-      params
-    );
-
-    res.json({ ticket: updated.rows[0] });
+    const updated = await prisma.ticket.update({ where: { id: ticketId }, data });
+    res.json({ ticket: serializeTicket(updated) });
   } catch (err) {
     next(err);
   }
@@ -242,14 +274,13 @@ export async function deleteTicket(req: Request, res: Response, next: NextFuncti
   try {
     const ticketId = parseInt(req.params.id);
 
-    // Delete physical files
-    const attachments = await query(`SELECT filepath FROM attachments WHERE ticket_id = $1`, [ticketId]);
-    for (const att of attachments.rows) {
+    const attachments = await prisma.attachment.findMany({ where: { ticketId }, select: { filepath: true } });
+    for (const att of attachments) {
       const filePath = path.join(__dirname, '../../uploads', att.filepath);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
 
-    await query(`DELETE FROM tickets WHERE id = $1`, [ticketId]);
+    await prisma.ticket.delete({ where: { id: ticketId } });
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -264,14 +295,8 @@ export async function uploadAttachment(req: Request, res: Response, next: NextFu
 
     if (!files || files.length === 0) throw new AppError('No files uploaded', 400);
 
-    // Check existing attachment count
-    const countResult = await query(
-      `SELECT COUNT(*) as count FROM attachments WHERE ticket_id = $1`,
-      [ticketId]
-    );
-    const existing = parseInt(countResult.rows[0].count);
+    const existing = await prisma.attachment.count({ where: { ticketId } });
     if (existing + files.length > 5) {
-      // Clean up uploaded files
       for (const f of files) {
         const fp = path.join(__dirname, '../../uploads', f.filename);
         if (fs.existsSync(fp)) fs.unlinkSync(fp);
@@ -279,21 +304,27 @@ export async function uploadAttachment(req: Request, res: Response, next: NextFu
       throw new AppError('Maximum 5 attachments per ticket', 400);
     }
 
-    const inserted = [];
-    for (const file of files) {
-      const result = await query(
-        `INSERT INTO attachments (ticket_id, filename, filepath) VALUES ($1, $2, $3) RETURNING *`,
-        [ticketId, file.originalname, file.filename]
-      );
-      inserted.push(result.rows[0]);
-    }
-
-    await query(
-      `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-      [ticketId, userId, 'attachment_uploaded', `${files.length} file(s) uploaded`]
+    const inserted = await prisma.$transaction(
+      files.map((file) =>
+        prisma.attachment.create({
+          data: { ticketId, filename: file.originalname, filepath: file.filename },
+        })
+      )
     );
 
-    res.status(201).json({ attachments: inserted });
+    await prisma.ticketActivity.create({
+      data: { ticketId, userId, action: 'attachment_uploaded', detail: `${files.length} file(s) uploaded` },
+    });
+
+    res.status(201).json({
+      attachments: inserted.map((a) => ({
+        id: a.id,
+        ticket_id: a.ticketId,
+        filename: a.filename,
+        filepath: a.filepath,
+        uploaded_at: a.uploadedAt,
+      })),
+    });
   } catch (err) {
     next(err);
   }
@@ -305,27 +336,24 @@ export async function deleteAttachment(req: Request, res: Response, next: NextFu
     const ticketId = parseInt(req.params.id);
     const attachmentId = parseInt(req.params.attachmentId);
 
-    const result = await query(
-      `SELECT a.*, t.user_id FROM attachments a JOIN tickets t ON a.ticket_id = t.id WHERE a.id = $1 AND a.ticket_id = $2`,
-      [attachmentId, ticketId]
-    );
+    const attachment = await prisma.attachment.findFirst({
+      where: { id: attachmentId, ticketId },
+      include: { ticket: { select: { userId: true } } },
+    });
 
-    if (result.rows.length === 0) throw new AppError('Attachment not found', 404);
-    const att = result.rows[0];
+    if (!attachment) throw new AppError('Attachment not found', 404);
 
-    if (role === 'client' && att.user_id !== userId) {
+    if (role === 'client' && attachment.ticket.userId !== userId) {
       throw new AppError('Not authorised', 403);
     }
 
-    // Delete physical file
-    const filePath = path.join(__dirname, '../../uploads', att.filepath);
+    const filePath = path.join(__dirname, '../../uploads', attachment.filepath);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
-    await query(`DELETE FROM attachments WHERE id = $1`, [attachmentId]);
-    await query(
-      `INSERT INTO ticket_activity (ticket_id, user_id, action, detail) VALUES ($1, $2, $3, $4)`,
-      [ticketId, userId, 'attachment_deleted', `File "${att.filename}" removed`]
-    );
+    await prisma.attachment.delete({ where: { id: attachmentId } });
+    await prisma.ticketActivity.create({
+      data: { ticketId, userId, action: 'attachment_deleted', detail: `File "${attachment.filename}" removed` },
+    });
 
     res.json({ ok: true });
   } catch (err) {

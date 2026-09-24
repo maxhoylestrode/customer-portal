@@ -1,3 +1,5 @@
+export type Role = 'client' | 'admin' | 'staff' | 'sales';
+
 export interface User {
   id: number;
   name: string;
@@ -7,7 +9,7 @@ export interface User {
   website_url?: string;
   client_notes?: string;
   password_hash: string;
-  role: 'client' | 'admin';
+  role: Role;
   is_active: boolean;
   invite_token?: string;
   invite_token_expires?: Date;
@@ -49,7 +51,7 @@ export interface TicketActivity {
 
 export interface JwtPayload {
   userId: number;
-  role: 'client' | 'admin';
+  role: Role;
 }
 
 // Extend Express Request
