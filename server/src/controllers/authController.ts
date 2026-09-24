@@ -230,7 +230,7 @@ export async function requestPasswordReset(req: Request, res: Response, next: Ne
       data: { passwordResetToken: hashedToken, passwordResetExpires: expires },
     });
 
-    await sendPasswordResetEmail(user.email, user.name, rawToken);
+    sendPasswordResetEmail(user.email, user.name, rawToken).catch(console.error);
     res.json({ ok: true, message: 'Password reset email sent' });
   } catch (err) {
     next(err);

@@ -60,7 +60,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
       select: { id: true, name: true, email: true },
     });
 
-    await sendInviteEmail(email, rawToken);
+    sendInviteEmail(email, rawToken).catch(console.error);
 
     res.status(201).json({ user, message: 'Invite sent to ' + email });
   } catch (err) {
@@ -100,7 +100,7 @@ export async function generateInviteLink(req: Request, res: Response, next: Next
       });
     }
 
-    await sendInviteEmail(email, rawToken);
+    sendInviteEmail(email, rawToken).catch(console.error);
     res.json({ ok: true, message: `Invite sent to ${email}` });
   } catch (err) {
     next(err);
