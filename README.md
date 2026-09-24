@@ -162,6 +162,33 @@ apex-portal/
 | `POST /api/admin/users/:id/reset-password` | Trigger password reset |
 | `GET /api/uploads/:filename` | Serve uploaded file |
 
+### Staff routes (internal team — admin/staff/sales roles only)
+
+Roles: `admin` (full access), `staff` (no client-role restrictions), `sales` (blocked from `/api/projects` and availability management; auto-scoped to their own clients on the dashboard). Client-role portal users get `403` on all of these.
+
+| Prefix | Description |
+|--------|-------------|
+| `GET/POST /api/clients`, `GET/PUT/DELETE /api/clients/:id` | Client CRM records |
+| `POST/DELETE /api/clients/:id/avatar` | Client avatar |
+| `POST /api/clients/:id/files` | Upload a client document |
+| `GET /api/clients/:clientId/notes`, `POST /api/clients/:clientId/notes` | Notes on a client |
+| `PUT/DELETE /api/notes/:id` | Edit/delete a client note |
+| `GET/POST /api/projects`, `GET/PUT/DELETE /api/projects/:id` | Projects + milestones |
+| `GET /api/files/:fileId/view`, `/download`, `DELETE /api/files/:fileId` | Client document access |
+| `GET /api/dashboard/stats` | Staff CRM dashboard |
+| `GET/PUT /api/settings/branding`, `GET/POST/DELETE /api/settings/logo` | Portal branding (logo GET is public) |
+| `PUT /api/settings/profile` | Own staff profile |
+| `GET/POST /api/settings/users`, `PUT/DELETE /api/settings/users/:id` | Manage admin/staff/sales accounts |
+| `GET/POST /api/storage`, `GET /api/storage/folders` | Internal file storage |
+| `PATCH /api/storage/:fileId/permissions` | Set storage file sharing |
+| `GET /api/storage/:fileId/view`, `/download`, `DELETE /api/storage/:fileId` | Storage file access |
+| `GET/POST /api/general-notes`, `PUT/DELETE /api/general-notes/:id` | Team notes (public or private) |
+| `GET/POST /api/meetings/available-slots`, `DELETE /api/meetings/available-slots/:id` | Calendar availability |
+| `GET/POST /api/meetings`, `PUT/DELETE /api/meetings/:id` | Booked meetings |
+| `GET /api/users` | List internal accounts (assignee pickers) |
+
+Uploads split into two roots: `server/uploads/` (ticket attachments, avatars, portal logo — served statically at `/api/uploads` and `/uploads`) and `server/private-uploads/` (client documents, internal storage files — never statically mounted, only reachable through the authenticated view/download routes above).
+
 ---
 
 *Built for Apex Studio Codes — apexstudiocodes.co.uk — Somerset, UK*

@@ -4,12 +4,22 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import path from 'path';
 
 import authRoutes from './routes/auth';
 import ticketRoutes from './routes/tickets';
 import adminRoutes from './routes/admin';
+import clientRoutes from './routes/clients';
+import projectRoutes from './routes/projects';
+import fileRoutes from './routes/files';
+import staffDashboardRoutes from './routes/staffDashboard';
+import settingsRoutes from './routes/settings';
+import storageRoutes from './routes/storage';
+import noteRoutes from './routes/notes';
+import generalNoteRoutes from './routes/generalNotes';
+import meetingRoutes from './routes/meetings';
+import staffUserRoutes from './routes/staffUsers';
 import { errorHandler } from './middleware/errorHandler';
+import { UPLOAD_DIR } from './config/paths';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,16 +32,33 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Serve uploaded files
-app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve uploaded files. Only publicly-servable assets live under UPLOAD_DIR
+// (ticket attachments, avatars, portal logo) — access-controlled client
+// documents and internal storage files live outside it, in PRIVATE_UPLOAD_DIR,
+// and are only ever streamed through authenticated controller routes.
+app.use('/api/uploads', express.static(UPLOAD_DIR));
+app.use('/uploads', express.static(UPLOAD_DIR));
 
-// Routes
+// Health check — registered before any auth-gated router so it's never
+// shadowed by an upstream router's blanket authenticate middleware
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+
+// Client-portal routes (ticket system)
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Health check
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+// Staff-portal routes (client/project/CRM management)
+app.use('/api/clients', clientRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/dashboard', staffDashboardRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/storage', storageRoutes);
+app.use('/api/notes', noteRoutes);
+app.use('/api/general-notes', generalNoteRoutes);
+app.use('/api/meetings', meetingRoutes);
+app.use('/api/users', staffUserRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

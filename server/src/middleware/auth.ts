@@ -45,3 +45,14 @@ export function requireRole(...roles: Role[]) {
     next();
   };
 }
+
+// Block specific role(s) — e.g. denyRole('sales') to keep sales out of a resource
+export function denyRole(...roles: Role[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || roles.includes(req.user.role)) {
+      res.status(403).json({ error: 'Access restricted for your role' });
+      return;
+    }
+    next();
+  };
+}

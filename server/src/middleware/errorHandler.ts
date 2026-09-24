@@ -21,9 +21,21 @@ export function errorHandler(
     return;
   }
 
-  // Postgres unique violation
-  if ((err as NodeJS.ErrnoException).code === '23505') {
+  const code = (err as { code?: string }).code;
+
+  // Postgres unique violation (raised directly, outside Prisma)
+  if (code === '23505') {
     res.status(409).json({ error: 'A record with that value already exists' });
+    return;
+  }
+
+  // Prisma known-request errors
+  if (code === 'P2002') {
+    res.status(409).json({ error: 'A record with that value already exists' });
+    return;
+  }
+  if (code === 'P2025') {
+    res.status(404).json({ error: 'Record not found' });
     return;
   }
 
