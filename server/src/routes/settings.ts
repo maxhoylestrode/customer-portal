@@ -7,6 +7,7 @@ const router = Router();
 
 // Branding (logo + portal name) — logo/branding writes are admin only; reads are public
 router.get('/logo', settings.getLogo);
+router.get('/logo/image', settings.getLogoImage);
 router.post('/logo', authenticate, requireAdmin, logoUpload.single('logo'), settings.uploadLogo);
 router.delete('/logo', authenticate, requireAdmin, settings.deleteLogo);
 

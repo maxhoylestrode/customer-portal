@@ -19,7 +19,6 @@ import generalNoteRoutes from './routes/generalNotes';
 import meetingRoutes from './routes/meetings';
 import staffUserRoutes from './routes/staffUsers';
 import { errorHandler } from './middleware/errorHandler';
-import { UPLOAD_DIR } from './config/paths';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,12 +31,12 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Serve uploaded files. Only publicly-servable assets live under UPLOAD_DIR
-// (ticket attachments, avatars, portal logo) — access-controlled client
-// documents and internal storage files live outside it, in PRIVATE_UPLOAD_DIR,
-// and are only ever streamed through authenticated controller routes.
-app.use('/api/uploads', express.static(UPLOAD_DIR));
-app.use('/uploads', express.static(UPLOAD_DIR));
+// Uploaded files (ticket attachments, avatars, client documents, internal
+// storage, portal logo) all live as bytes in Postgres now, not on local
+// disk — so they survive redeploys. Nothing is statically served; every
+// file is streamed through its own authenticated/permission-checked
+// controller route instead (see clients.ts, files.ts, storage.ts,
+// settings.ts, tickets.ts).
 
 // Health check — registered before any auth-gated router so it's never
 // shadowed by an upstream router's blanket authenticate middleware

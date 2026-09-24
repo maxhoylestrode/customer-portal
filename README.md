@@ -134,11 +134,12 @@ Open [http://localhost:5173](http://localhost:5173)
 apex-portal/
 ├── client/          # React + Vite frontend
 ├── server/          # Express backend
-│   └── uploads/     # Uploaded files (auto-created)
 ├── database/
-│   └── schema.sql   # PostgreSQL schema
+│   └── schema.sql   # PostgreSQL schema (reference only — Prisma migrations are the source of truth)
 └── .env.example     # Environment variable template
 ```
+
+All uploaded files (ticket attachments, avatars, client documents, internal storage, portal logo) are stored as bytes in Postgres, not on local disk — nothing is lost on redeploy. Each is served through its own authenticated/permission-checked route rather than static file serving.
 
 ---
 
@@ -160,7 +161,7 @@ apex-portal/
 | `POST /api/admin/users` | Create client |
 | `PATCH /api/admin/users/:id` | Update client |
 | `POST /api/admin/users/:id/reset-password` | Trigger password reset |
-| `GET /api/uploads/:filename` | Serve uploaded file |
+| `GET /api/tickets/:id/attachments/:attachmentId` | Download/view a ticket attachment |
 
 ### Staff routes (internal team — admin/staff/sales roles only)
 
@@ -169,7 +170,8 @@ Roles: `admin` (full access), `staff` (no client-role restrictions), `sales` (bl
 | Prefix | Description |
 |--------|-------------|
 | `GET/POST /api/clients`, `GET/PUT/DELETE /api/clients/:id` | Client CRM records |
-| `POST/DELETE /api/clients/:id/avatar` | Client avatar |
+| `POST/DELETE /api/clients/:id/avatar`, `GET /api/clients/:id/avatar` | Client avatar |
+| `PUT /api/clients/:id/portal-link`, `GET /api/clients/portal-users` | Link a client CRM record to its ticket-portal login |
 | `POST /api/clients/:id/files` | Upload a client document |
 | `GET /api/clients/:clientId/notes`, `POST /api/clients/:clientId/notes` | Notes on a client |
 | `PUT/DELETE /api/notes/:id` | Edit/delete a client note |
@@ -186,8 +188,6 @@ Roles: `admin` (full access), `staff` (no client-role restrictions), `sales` (bl
 | `GET/POST /api/meetings/available-slots`, `DELETE /api/meetings/available-slots/:id` | Calendar availability |
 | `GET/POST /api/meetings`, `PUT/DELETE /api/meetings/:id` | Booked meetings |
 | `GET /api/users` | List internal accounts (assignee pickers) |
-
-Uploads split into two roots: `server/uploads/` (ticket attachments, avatars, portal logo — served statically at `/api/uploads` and `/uploads`) and `server/private-uploads/` (client documents, internal storage files — never statically mounted, only reachable through the authenticated view/download routes above).
 
 ---
 

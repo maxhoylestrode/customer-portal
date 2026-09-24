@@ -1,90 +1,89 @@
 import { Request, Response, NextFunction } from 'express';
-import path from 'path';
-import fs from 'fs';
 import bcrypt from 'bcrypt';
 import prisma from '../config/prisma';
-import { UPLOAD_DIR } from '../config/paths';
 
-const logoDir = path.join(UPLOAD_DIR, 'logo');
-const metaFile = path.join(logoDir, 'meta.json');
-const brandingFile = path.join(UPLOAD_DIR, 'branding.json');
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-function readBranding(): { portalName: string } {
-  try {
-    if (fs.existsSync(brandingFile)) {
-      return JSON.parse(fs.readFileSync(brandingFile, 'utf8'));
-    }
-  } catch {
-    /* ignore malformed branding file */
-  }
-  return { portalName: 'Apex Portal' };
-}
-
-function writeBranding(data: { portalName: string }) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  fs.writeFileSync(brandingFile, JSON.stringify(data, null, 2));
-}
-
-function findLogoFile(): string | null {
-  if (!fs.existsSync(logoDir)) return null;
-  if (fs.existsSync(metaFile)) {
-    try {
-      const meta = JSON.parse(fs.readFileSync(metaFile, 'utf8'));
-      if (meta.file && fs.existsSync(path.join(logoDir, meta.file))) {
-        return meta.file;
-      }
-    } catch {
-      /* ignore malformed meta file */
-    }
-  }
-  const exts = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.ico', '.gif'];
-  const files = fs.readdirSync(logoDir).filter((f) => exts.includes(path.extname(f).toLowerCase()));
-  return files[0] || null;
+// Branding is a single row (id=1) in the database — logo bytes and portal
+// name live there instead of local files, so they survive redeploys.
+async function getOrCreateBranding() {
+  return prisma.branding.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1 },
+  });
 }
 
 // ── Branding ─────────────────────────────────────────────────────────────
 
-export function getLogo(_req: Request, res: Response) {
-  const file = findLogoFile();
-  if (!file) return res.json({ logoUrl: null });
-  res.json({ logoUrl: `/uploads/logo/${file}` });
-}
-
-export function uploadLogo(req: Request, res: Response) {
-  if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
-
-  fs.mkdirSync(logoDir, { recursive: true });
-  fs.writeFileSync(metaFile, JSON.stringify({ file: req.file.filename }));
-
-  res.json({ logoUrl: `/uploads/logo/${req.file.filename}` });
-}
-
-export function deleteLogo(_req: Request, res: Response) {
-  const file = findLogoFile();
-  if (file) {
-    const fullPath = path.join(logoDir, file);
-    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
-    if (fs.existsSync(metaFile)) fs.unlinkSync(metaFile);
+export async function getLogo(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const branding = await getOrCreateBranding();
+    res.json({ logoUrl: branding.logoData ? '/api/settings/logo/image' : null });
+  } catch (err) {
+    next(err);
   }
-  res.json({ message: 'Logo removed' });
 }
 
-export function getBranding(_req: Request, res: Response) {
-  const branding = readBranding();
-  const logoFile = findLogoFile();
-  res.json({
-    portalName: branding.portalName || 'Apex Portal',
-    logoUrl: logoFile ? `/uploads/logo/${logoFile}` : null,
-  });
+export async function getLogoImage(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const branding = await prisma.branding.findUnique({ where: { id: 1 }, select: { logoData: true, logoMimetype: true } });
+    if (!branding?.logoData) return res.status(404).json({ error: 'No logo set' });
+    res.setHeader('Content-Type', branding.logoMimetype || 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(Buffer.from(branding.logoData));
+  } catch (err) {
+    next(err);
+  }
 }
 
-export function updateBranding(req: Request, res: Response) {
-  const { portalName } = req.body;
-  const current = readBranding();
-  writeBranding({ portalName: portalName?.trim() || current.portalName });
-  res.json({ portalName: portalName?.trim() || current.portalName });
+export async function uploadLogo(req: Request, res: Response, next: NextFunction) {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    await prisma.branding.upsert({
+      where: { id: 1 },
+      update: { logoData: Buffer.from(req.file.buffer), logoMimetype: req.file.mimetype },
+      create: { id: 1, logoData: Buffer.from(req.file.buffer), logoMimetype: req.file.mimetype },
+    });
+    res.json({ logoUrl: '/api/settings/logo/image' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function deleteLogo(_req: Request, res: Response, next: NextFunction) {
+  try {
+    await prisma.branding.upsert({
+      where: { id: 1 },
+      update: { logoData: null, logoMimetype: null },
+      create: { id: 1 },
+    });
+    res.json({ message: 'Logo removed' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getBranding(_req: Request, res: Response, next: NextFunction) {
+  try {
+    const branding = await getOrCreateBranding();
+    res.json({
+      portalName: branding.portalName || 'Apex Portal',
+      logoUrl: branding.logoData ? '/api/settings/logo/image' : null,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function updateBranding(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { portalName } = req.body;
+    const current = await getOrCreateBranding();
+    const nextName = portalName?.trim() || current.portalName;
+    await prisma.branding.update({ where: { id: 1 }, data: { portalName: nextName } });
+    res.json({ portalName: nextName });
+  } catch (err) {
+    next(err);
+  }
 }
 
 // ── Internal user management (admin only — client accounts live under /api/admin) ──

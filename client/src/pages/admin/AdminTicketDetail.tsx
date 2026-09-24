@@ -190,7 +190,7 @@ export default function AdminTicketDetail() {
                   >
                     <FileText className="w-4 h-4 text-gray-400 shrink-0" />
                     <a
-                      href={`/api/uploads/${att.filepath}`}
+                      href={`/api/tickets/${att.ticket_id}/attachments/${att.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-[#0D3040] flex-1 truncate hover:underline flex items-center gap-1"

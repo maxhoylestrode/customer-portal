@@ -8,9 +8,11 @@ export const adminApi = {
   getUsers: () => api.get<{ users: User[] }>('/admin/users'),
 
   getUser: (id: number) =>
-    api.get<{ user: User; stats: { pending: number; in_progress: number; complete: number; total: number } }>(
-      `/admin/users/${id}`
-    ),
+    api.get<{
+      user: User;
+      stats: { pending: number; in_progress: number; complete: number; total: number };
+      crm_client: { id: number; name: string; company: string | null } | null;
+    }>(`/admin/users/${id}`),
 
   createUser: (data: {
     name: string;

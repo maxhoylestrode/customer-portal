@@ -21,10 +21,20 @@ function visibilityWhere(userId: number, role: string): Prisma.StorageFileWhereI
   };
 }
 
-const fileInclude = {
+// Excludes `data` (the file bytes) — used for list/upload/permissions
+// responses so the blob is never pulled into a JSON payload.
+const fileSafeSelect = {
+  id: true,
+  filename: true,
+  mimetype: true,
+  size: true,
+  folder: true,
+  shareMode: true,
+  uploadedBy: true,
+  uploadedAt: true,
   uploader: { select: { id: true, name: true } },
-  accessList: { include: { user: { select: { id: true, name: true } } } },
-};
+  accessList: { select: { id: true, userId: true, user: { select: { id: true, name: true } } } },
+} satisfies Prisma.StorageFileSelect;
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -47,7 +57,7 @@ export async function list(req: Request, res: Response, next: NextFunction) {
     };
     const orderBy = orderByMap[sort as string] || { uploadedAt: 'desc' };
 
-    const files = await prisma.storageFile.findMany({ where, include: fileInclude, orderBy });
+    const files = await prisma.storageFile.findMany({ where, select: fileSafeSelect, orderBy });
     res.json(files);
   } catch (err) {
     next(err);
@@ -95,7 +105,8 @@ export async function upload(req: Request, res: Response, next: NextFunction) {
         prisma.storageFile.create({
           data: {
             filename: f.originalname,
-            filepath: f.path,
+            filepath: f.originalname,
+            data: Buffer.from(f.buffer),
             mimetype: f.mimetype,
             size: f.size,
             folder,
@@ -105,7 +116,7 @@ export async function upload(req: Request, res: Response, next: NextFunction) {
               ? { accessList: { create: specificUserIds.map((uid) => ({ userId: uid })) } }
               : {}),
           },
-          include: fileInclude,
+          select: fileSafeSelect,
         })
       )
     );
@@ -144,7 +155,7 @@ export async function setPermissions(req: Request, res: Response, next: NextFunc
       }
     });
 
-    const updated = await prisma.storageFile.findUnique({ where: { id: fileId }, include: fileInclude });
+    const updated = await prisma.storageFile.findUnique({ where: { id: fileId }, select: fileSafeSelect });
     res.json(updated);
   } catch (err) {
     next(err);
@@ -173,9 +184,15 @@ export async function download(req: Request, res: Response, next: NextFunction) 
     if (!file) return res.status(404).json({ error: 'File not found' });
     if (!canSeeFile(file, req.user!.userId, req.user!.role)) return res.status(403).json({ error: 'Access denied' });
 
+    if (file.data) {
+      res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+      res.send(Buffer.from(file.data));
+      return;
+    }
+
     const absolute = path.resolve(file.filepath);
     if (!fs.existsSync(absolute)) return res.status(404).json({ error: 'File not found on disk' });
-
     res.download(absolute, file.filename);
   } catch (err) {
     next(err);
@@ -191,13 +208,18 @@ export async function view(req: Request, res: Response, next: NextFunction) {
     if (!file) return res.status(404).json({ error: 'File not found' });
     if (!canSeeFile(file, req.user!.userId, req.user!.role)) return res.status(403).json({ error: 'Access denied' });
 
-    const absolute = path.resolve(file.filepath);
-    if (!fs.existsSync(absolute)) return res.status(404).json({ error: 'File not found on disk' });
-
     const mime = file.mimetype || 'application/octet-stream';
     res.setHeader('Content-Type', mime);
     res.setHeader('Content-Disposition', `inline; filename="${file.filename}"`);
     res.setHeader('Cache-Control', 'private, max-age=3600');
+
+    if (file.data) {
+      res.send(Buffer.from(file.data));
+      return;
+    }
+
+    const absolute = path.resolve(file.filepath);
+    if (!fs.existsSync(absolute)) return res.status(404).json({ error: 'File not found on disk' });
     fs.createReadStream(absolute).pipe(res);
   } catch (err) {
     next(err);
@@ -213,8 +235,11 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
       return res.status(403).json({ error: 'Only the uploader or an admin can delete this file' });
     }
 
-    const absolute = path.resolve(file.filepath);
-    if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+    if (!file.data) {
+      // Pre-migration file — clean up its on-disk copy too
+      const absolute = path.resolve(file.filepath);
+      if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
+    }
 
     await prisma.storageFile.delete({ where: { id: file.id } });
     res.json({ message: 'File deleted' });

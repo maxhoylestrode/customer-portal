@@ -15,10 +15,12 @@ export async function upload(req: Request, res: Response, next: NextFunction) {
       data: {
         clientId,
         filename: req.file.originalname,
-        filepath: req.file.path,
+        filepath: req.file.originalname,
+        data: Buffer.from(req.file.buffer),
         mimetype: req.file.mimetype,
         size: req.file.size,
       },
+      select: { id: true, clientId: true, filename: true, mimetype: true, size: true, uploadedAt: true },
     });
 
     res.status(201).json(file);
@@ -35,11 +37,17 @@ export async function download(req: Request, res: Response, next: NextFunction) 
 
     if (!file) return res.status(404).json({ error: 'File not found' });
 
+    if (file.data) {
+      res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+      res.send(Buffer.from(file.data));
+      return;
+    }
+
     const absolute = path.resolve(file.filepath);
     if (!fs.existsSync(absolute)) {
       return res.status(404).json({ error: 'File not found on disk' });
     }
-
     res.download(absolute, file.filename);
   } catch (err) {
     next(err);
@@ -55,15 +63,20 @@ export async function view(req: Request, res: Response, next: NextFunction) {
 
     if (!file) return res.status(404).json({ error: 'File not found' });
 
-    const absolute = path.resolve(file.filepath);
-    if (!fs.existsSync(absolute)) {
-      return res.status(404).json({ error: 'File not found on disk' });
-    }
-
     const mime = file.mimetype || 'application/octet-stream';
     res.setHeader('Content-Type', mime);
     res.setHeader('Content-Disposition', `inline; filename="${file.filename}"`);
     res.setHeader('Cache-Control', 'private, max-age=3600');
+
+    if (file.data) {
+      res.send(Buffer.from(file.data));
+      return;
+    }
+
+    const absolute = path.resolve(file.filepath);
+    if (!fs.existsSync(absolute)) {
+      return res.status(404).json({ error: 'File not found on disk' });
+    }
     fs.createReadStream(absolute).pipe(res);
   } catch (err) {
     next(err);
@@ -78,9 +91,10 @@ export async function remove(req: Request, res: Response, next: NextFunction) {
 
     if (!file) return res.status(404).json({ error: 'File not found' });
 
-    const absolute = path.resolve(file.filepath);
-    if (fs.existsSync(absolute)) {
-      fs.unlinkSync(absolute);
+    if (!file.data) {
+      // Pre-migration file — clean up its on-disk copy too
+      const absolute = path.resolve(file.filepath);
+      if (fs.existsSync(absolute)) fs.unlinkSync(absolute);
     }
 
     await prisma.file.delete({ where: { id: file.id } });

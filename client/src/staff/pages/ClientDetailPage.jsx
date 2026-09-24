@@ -244,8 +244,9 @@ export default function ClientDetailPage() {
           )} {/* end sales role guard */}
         </div>
 
-        {/* Sidebar: Files + Notes */}
+        {/* Sidebar: Portal Access + Files + Notes */}
         <div className="space-y-6">
+          <PortalAccessCard client={client} onUpdate={fetchClient} />
           <FileSection clientId={client.id} files={client.files} onUpdate={fetchClient} />
           <NotesSection clientId={client.id} />
         </div>
@@ -284,6 +285,122 @@ function InfoItem({ label, value, className = '' }) {
     <div className={className}>
       <dt className="text-gray-500">{label}</dt>
       <dd className="mt-0.5 text-gray-200">{value || '—'}</dd>
+    </div>
+  );
+}
+
+function PortalAccessCard({ client, onUpdate }) {
+  const [linking, setLinking] = useState(false);
+  const [search, setSearch] = useState('');
+  const [candidates, setCandidates] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  const searchUsers = async (q) => {
+    setSearching(true);
+    try {
+      const r = await api.get('/clients/portal-users', { params: { search: q } });
+      setCandidates(Array.isArray(r.data) ? r.data : []);
+    } catch {
+      setCandidates([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (linking) searchUsers('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linking]);
+
+  const handleLink = async (portalUserId) => {
+    try {
+      await api.put(`/clients/${client.id}/portal-link`, { portalUserId });
+      toast.success('Portal login linked');
+      setLinking(false);
+      setSearch('');
+      onUpdate();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to link portal login');
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (!confirm('Remove the portal login link for this client?')) return;
+    try {
+      await api.put(`/clients/${client.id}/portal-link`, { portalUserId: null });
+      toast.success('Portal login unlinked');
+      onUpdate();
+    } catch {
+      toast.error('Failed to unlink');
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-800 bg-surface p-5">
+      <h2 className="mb-3 text-lg font-semibold">Portal Access</h2>
+      {client.portalUser ? (
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm font-medium text-gray-200">{client.portalUser.name}</p>
+            <p className="text-xs text-gray-500">{client.portalUser.email}</p>
+            {!client.portalUser.isActive && (
+              <span className="mt-1 inline-block rounded-full bg-red-600/20 px-2 py-0.5 text-xs text-red-400">Deactivated</span>
+            )}
+          </div>
+          {client.portalTicketSummary && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-amber-500/10 px-2 py-1 text-amber-400">{client.portalTicketSummary.pending} pending</span>
+              <span className="rounded-full bg-blue-500/10 px-2 py-1 text-blue-400">{client.portalTicketSummary.in_progress} in progress</span>
+              <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-emerald-400">{client.portalTicketSummary.complete} complete</span>
+            </div>
+          )}
+          <button onClick={handleUnlink} className="text-xs text-gray-500 hover:text-red-400">
+            Unlink portal login
+          </button>
+        </div>
+      ) : linking ? (
+        <div className="space-y-2">
+          <input
+            autoFocus
+            type="text"
+            placeholder="Search by name or email…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              searchUsers(e.target.value);
+            }}
+            className="w-full rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-sm text-gray-100 focus:border-brand-500 focus:outline-none"
+          />
+          <div className="max-h-48 space-y-1 overflow-y-auto">
+            {searching && <p className="text-xs text-gray-500">Searching…</p>}
+            {!searching && candidates.length === 0 && <p className="text-xs text-gray-500">No client portal accounts found.</p>}
+            {candidates.map((c) => (
+              <button
+                key={c.id}
+                disabled={!!c.linked_client_id}
+                onClick={() => handleLink(c.id)}
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs hover:bg-surface-lighter disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span>
+                  <span className="block text-gray-200">{c.name}</span>
+                  <span className="text-gray-500">{c.email}</span>
+                </span>
+                {c.linked_client_id && <span className="text-gray-600">linked elsewhere</span>}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setLinking(false)} className="text-xs text-gray-500 hover:text-gray-300">
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <div>
+          <p className="mb-2 text-xs text-gray-500">No ticket-portal login linked to this client yet.</p>
+          <button onClick={() => setLinking(true)} className="text-sm text-brand-400 hover:underline">
+            + Link a portal login
+          </button>
+        </div>
+      )}
     </div>
   );
 }

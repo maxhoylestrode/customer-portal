@@ -64,7 +64,7 @@ export default function TicketDetailPage() {
                 {attachments.map((att) => (
                   <li key={att.id}>
                     <a
-                      href={`/api/uploads/${att.filepath}`}
+                      href={`/api/tickets/${att.ticket_id}/attachments/${att.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"

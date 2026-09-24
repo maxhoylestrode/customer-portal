@@ -103,7 +103,13 @@ export async function createTicket(req: Request, res: Response, next: NextFuncti
       await prisma.$transaction(
         files.map((file) =>
           prisma.attachment.create({
-            data: { ticketId: ticket.id, filename: file.originalname, filepath: file.filename },
+            data: {
+              ticketId: ticket.id,
+              filename: file.originalname,
+              filepath: file.originalname,
+              data: Buffer.from(file.buffer),
+              mimetype: file.mimetype,
+            },
           })
         )
       );
@@ -274,7 +280,8 @@ export async function deleteTicket(req: Request, res: Response, next: NextFuncti
   try {
     const ticketId = parseInt(req.params.id);
 
-    const attachments = await prisma.attachment.findMany({ where: { ticketId }, select: { filepath: true } });
+    // Best-effort cleanup of pre-migration attachments that still only exist on disk
+    const attachments = await prisma.attachment.findMany({ where: { ticketId, data: null }, select: { filepath: true } });
     for (const att of attachments) {
       const filePath = path.join(__dirname, '../../uploads', att.filepath);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
@@ -297,17 +304,19 @@ export async function uploadAttachment(req: Request, res: Response, next: NextFu
 
     const existing = await prisma.attachment.count({ where: { ticketId } });
     if (existing + files.length > 5) {
-      for (const f of files) {
-        const fp = path.join(__dirname, '../../uploads', f.filename);
-        if (fs.existsSync(fp)) fs.unlinkSync(fp);
-      }
       throw new AppError('Maximum 5 attachments per ticket', 400);
     }
 
     const inserted = await prisma.$transaction(
       files.map((file) =>
         prisma.attachment.create({
-          data: { ticketId, filename: file.originalname, filepath: file.filename },
+          data: {
+            ticketId,
+            filename: file.originalname,
+            filepath: file.originalname,
+            data: Buffer.from(file.buffer),
+            mimetype: file.mimetype,
+          },
         })
       )
     );
@@ -330,6 +339,38 @@ export async function uploadAttachment(req: Request, res: Response, next: NextFu
   }
 }
 
+export async function downloadAttachment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { userId, role } = req.user!;
+    const ticketId = parseInt(req.params.id);
+    const attachmentId = parseInt(req.params.attachmentId);
+
+    const attachment = await prisma.attachment.findFirst({
+      where: { id: attachmentId, ticketId },
+      include: { ticket: { select: { userId: true } } },
+    });
+    if (!attachment) throw new AppError('Attachment not found', 404);
+    if (role === 'client' && attachment.ticket.userId !== userId) {
+      throw new AppError('Not authorised', 403);
+    }
+
+    if (attachment.data) {
+      res.setHeader('Content-Type', attachment.mimetype || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `inline; filename="${attachment.filename}"`);
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+      res.send(Buffer.from(attachment.data));
+      return;
+    }
+
+    // Fall back to disk for pre-migration attachments
+    const filePath = path.join(__dirname, '../../uploads', attachment.filepath);
+    if (!fs.existsSync(filePath)) throw new AppError('Attachment file not found', 404);
+    res.sendFile(filePath);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function deleteAttachment(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId, role } = req.user!;
@@ -347,8 +388,11 @@ export async function deleteAttachment(req: Request, res: Response, next: NextFu
       throw new AppError('Not authorised', 403);
     }
 
-    const filePath = path.join(__dirname, '../../uploads', attachment.filepath);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    if (!attachment.data) {
+      // Pre-migration attachment — clean up its on-disk file too
+      const filePath = path.join(__dirname, '../../uploads', attachment.filepath);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
 
     await prisma.attachment.delete({ where: { id: attachmentId } });
     await prisma.ticketActivity.create({

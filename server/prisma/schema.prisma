@@ -73,7 +73,12 @@ model Attachment {
   id         Int      @id @default(autoincrement())
   ticketId   Int      @map("ticket_id")
   filename   String   @db.VarChar(255)
+  // Deprecated: legacy on-disk path, kept only so attachments uploaded
+  // before file storage moved into the database still resolve. New rows
+  // don't rely on this — the bytes live in `data` below.
   filepath   String   @db.VarChar(500)
+  data       Bytes?
+  mimetype   String?  @db.VarChar(255)
   uploadedAt DateTime @default(now()) @map("uploaded_at") @db.Timestamptz
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
@@ -121,7 +126,10 @@ model Client {
   notes         String?
   tags          String[] @default([])
   hostingTier   String?  @map("hosting_tier")
-  avatarPath    String?  @map("avatar_path")
+  // Deprecated: legacy on-disk path. New avatars are stored as bytes below.
+  avatarPath     String? @map("avatar_path")
+  avatarData     Bytes?  @map("avatar_data")
+  avatarMimetype String? @map("avatar_mimetype")
   salesPersonId Int?     @map("sales_person_id")
   // optional link to a client-role User who can log into the portal
   portalUserId  Int?     @unique @map("portal_user_id")
@@ -153,10 +161,13 @@ model Note {
 }
 
 model File {
-  id         Int      @id @default(autoincrement())
-  clientId   Int      @map("client_id")
-  filename   String
+  id       Int    @id @default(autoincrement())
+  clientId Int    @map("client_id")
+  filename String
+  // Deprecated: legacy on-disk path, kept for files uploaded before this
+  // moved into the database.
   filepath   String
+  data       Bytes?
   mimetype   String?
   size       Int?
   uploadedAt DateTime @default(now()) @map("uploaded_at")
@@ -196,9 +207,12 @@ model Milestone {
 }
 
 model StorageFile {
-  id         Int      @id @default(autoincrement())
-  filename   String
+  id       Int    @id @default(autoincrement())
+  filename String
+  // Deprecated: legacy on-disk path, kept for files uploaded before this
+  // moved into the database.
   filepath   String
+  data       Bytes?
   mimetype   String?
   size       Int?
   folder     String   @default("General")
@@ -261,6 +275,18 @@ model Meeting {
   slot      AvailableSlot? @relation(fields: [slotId], references: [id], onDelete: SetNull)
 
   @@map("meetings")
+}
+
+// Singleton row (id is always 1) holding portal branding — logo bytes and
+// portal name live here instead of local files so they survive redeploys.
+model Branding {
+  id            Int      @id @default(1)
+  portalName    String   @default("Apex Portal") @map("portal_name")
+  logoData      Bytes?   @map("logo_data")
+  logoMimetype  String?  @map("logo_mimetype")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("branding")
 }
 
 model GeneralNote {

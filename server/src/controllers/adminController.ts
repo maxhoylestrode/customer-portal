@@ -151,11 +151,12 @@ export async function getUser(req: Request, res: Response, next: NextFunction) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('User not found', 404);
 
-    const [pending, in_progress, complete, total] = await Promise.all([
+    const [pending, in_progress, complete, total, crmClient] = await Promise.all([
       prisma.ticket.count({ where: { userId, status: 'pending' } }),
       prisma.ticket.count({ where: { userId, status: 'in_progress' } }),
       prisma.ticket.count({ where: { userId, status: 'complete' } }),
       prisma.ticket.count({ where: { userId } }),
+      prisma.client.findUnique({ where: { portalUserId: userId }, select: { id: true, name: true, company: true } }),
     ]);
 
     res.json({
@@ -174,6 +175,7 @@ export async function getUser(req: Request, res: Response, next: NextFunction) {
         created_at: user.createdAt,
       },
       stats: { pending, in_progress, complete, total },
+      crm_client: crmClient,
     });
   } catch (err) {
     next(err);

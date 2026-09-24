@@ -6,6 +6,7 @@ import {
   updateTicket,
   deleteTicket,
   uploadAttachment,
+  downloadAttachment,
   deleteAttachment,
 } from '../controllers/ticketController';
 import { authenticate, requireAdmin } from '../middleware/auth';
@@ -22,6 +23,7 @@ router.patch('/:id', updateTicket);
 router.delete('/:id', requireAdmin, deleteTicket);
 
 router.post('/:id/attachments', upload.array('attachments', 5), uploadAttachment);
+router.get('/:id/attachments/:attachmentId', downloadAttachment);
 router.delete('/:id/attachments/:attachmentId', deleteAttachment);
 
 export default router;

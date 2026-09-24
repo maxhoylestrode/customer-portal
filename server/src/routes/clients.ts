@@ -11,13 +11,18 @@ const router = Router();
 router.use(authenticate, requireStaff);
 
 router.get('/', clients.list);
+router.get('/portal-users', clients.listPortalUsers); // must precede /:id
 router.get('/:id', clients.getById);
 router.post('/', clients.create);
 router.put('/:id', clients.update);
 router.delete('/:id', denyRole('sales'), clients.remove); // Sales cannot delete clients
 
+// Portal login link
+router.put('/:id/portal-link', clients.linkPortalUser);
+
 // Avatar
 router.post('/:id/avatar', avatarUpload.single('avatar'), clients.uploadAvatar);
+router.get('/:id/avatar', clients.getAvatar);
 router.delete('/:id/avatar', clients.deleteAvatar);
 
 // File uploads scoped to client
