@@ -4,6 +4,7 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 
 import authRoutes from './routes/auth';
 import ticketRoutes from './routes/tickets';
@@ -62,6 +63,26 @@ app.use('/api/meetings', meetingRoutes);
 app.use('/api/users', staffUserRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/push', pushRoutes);
+
+// Single-container deployment: serve the built React client and let it
+// handle client-side routing. Must come after every /api/* mount above so
+// none of them get shadowed by the catch-all.
+if (process.env.NODE_ENV === 'production') {
+  const clientDist = path.join(__dirname, '../../client/dist');
+  app.use(express.static(clientDist, {
+    maxAge: '1y',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    },
+  }));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 // Error handler (must be last)
 app.use(errorHandler);

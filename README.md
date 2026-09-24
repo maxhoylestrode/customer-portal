@@ -11,7 +11,8 @@ A full-stack client portal for Apex Studio Codes. Clients submit and track websi
 - **Database:** PostgreSQL (raw SQL, no ORM)
 - **Auth:** JWT (access + refresh tokens in httpOnly cookies)
 - **Email:** Nodemailer (SMTP)
-- **Uploads:** Local `/uploads` directory
+- **Uploads:** Stored as bytes in Postgres (see below) — nothing on local disk
+- **Deployment:** Docker / CapRover (`Dockerfile` + `captain-definition`)
 
 ---
 
@@ -132,14 +133,40 @@ Open [http://localhost:5173](http://localhost:5173)
 
 ```
 apex-portal/
-├── client/          # React + Vite frontend
-├── server/          # Express backend
+├── client/               # React + Vite frontend
+├── server/               # Express backend
 ├── database/
-│   └── schema.sql   # PostgreSQL schema (reference only — Prisma migrations are the source of truth)
-└── .env.example     # Environment variable template
+│   └── schema.sql        # PostgreSQL schema (reference only — Prisma migrations are the source of truth)
+├── Dockerfile            # Multi-stage build: client + server → single runtime image
+├── captain-definition    # Points CapRover at the Dockerfile
+├── MIGRATION.md          # Moving the live database + attachments from the old server to CapRover
+└── .env.example          # Environment variable template
 ```
 
 All uploaded files (ticket attachments, avatars, client documents, internal storage, portal logo) are stored as bytes in Postgres, not on local disk — nothing is lost on redeploy. Each is served through its own authenticated/permission-checked route rather than static file serving.
+
+---
+
+## Deployment (CapRover)
+
+The `Dockerfile` builds the React client and the Express server in separate
+stages, then runs them as a single container: Express serves `/api/*` and
+also serves the built client with an SPA fallback, so there's nothing else
+to host separately.
+
+```bash
+caprover deploy
+```
+
+Set `NODE_ENV=production`, `PORT`/Container HTTP Port to `3001`, and the
+rest of the variables from `.env.example` in the CapRover app's config. The
+container runs `prisma migrate deploy` automatically on every start, so
+schema changes ship with the code — no manual migration step.
+
+**Migrating an existing production database and its ticket attachments from
+another server?** See [`MIGRATION.md`](./MIGRATION.md) — it covers the
+`pg_dump`/`pg_restore` steps and a one-time script to bring old on-disk
+attachments into the database so nothing is lost on cutover.
 
 ---
 
