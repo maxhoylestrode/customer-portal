@@ -143,6 +143,24 @@ All uploaded files (ticket attachments, avatars, client documents, internal stor
 
 ---
 
+## Installable App (PWA)
+
+The client is a Progressive Web App — visitors can install it like a native app (its own window/icon, no app store) from any browser that supports it:
+
+- **Desktop Chrome/Edge:** an install icon appears in the address bar, or use the browser menu → "Install Apex Portal"
+- **Android Chrome:** menu → "Add to Home screen" / "Install app"
+- **iOS Safari:** Share → "Add to Home Screen"
+
+This works identically for the client ticket portal and the staff CRM — whoever installs it gets the same app, and still lands on whichever section their role gives them access to.
+
+Implementation (`client/vite-plugin-pwa` in `vite.config.ts`):
+- The manifest (name, icons, `display: "standalone"`) is generated at build time — nothing to configure per-deploy.
+- Icons live in `client/public/icons/`, generated from `client/public/logo.png`. Regenerate them if the logo changes (any image-resize tool works — 192×192, 512×512, a 512×512 maskable variant with ~30% padding, a 180×180 apple-touch-icon, and a 32×32 favicon).
+- A service worker precaches the built app shell (JS/CSS/HTML) so the app opens instantly, but **every `/api/*` request is `NetworkOnly`** — the service worker never serves ticket/CRM/chat data from cache, only the static shell. That's deliberate: this is a live data app, not a content site.
+- `npm run build && npm run preview` serves the production build locally (with the same `/api` proxy as `dev`) if you want to test the installed-app experience before deploying.
+
+---
+
 ## API Overview
 
 | Prefix | Description |
