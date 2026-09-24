@@ -7,6 +7,7 @@ import { authApi } from '../../api/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../components/Toast';
 import Spinner from '../../components/Spinner';
+import { defaultRouteForRole } from '../../router';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -29,7 +30,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(data.email, data.password);
       setUser(res.data.user);
-      navigate(res.data.user.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+      navigate(defaultRouteForRole(res.data.user.role), { replace: true });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Login failed';
       setError('root', { message: msg });
