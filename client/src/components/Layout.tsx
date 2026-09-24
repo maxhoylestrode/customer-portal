@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../api/auth';
 import { useToast } from './Toast';
+import GlobalSearch from './GlobalSearch';
 import {
   LayoutDashboard,
   Ticket,
@@ -152,6 +153,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
       </div>
+
+      {/* Search — staff/admin/sales only, not the client ticket portal */}
+      {user?.role !== 'client' && (
+        <div className="px-3 pt-3">
+          <GlobalSearch dark={isStaffSection} />
+        </div>
+      )}
 
       {/* Nav */}
       <div className="flex-1 px-3 py-4 overflow-y-auto">

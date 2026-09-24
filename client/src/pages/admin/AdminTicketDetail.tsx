@@ -9,6 +9,7 @@ import { PageSpinner } from '../../components/Spinner';
 import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
+import TicketChat from '../../components/TicketChat';
 import { formatDate, formatDateTime, getActivityLabel, getScopeLabel } from '../../utils/formatters';
 import {
   Paperclip, Trash2, ExternalLink, Clock, FileText, X,
@@ -211,6 +212,9 @@ export default function AdminTicketDetail() {
               </ul>
             )}
           </div>
+
+          {/* Chat */}
+          <TicketChat ticketId={ticket.id} />
 
           {/* Activity log */}
           <div className="card px-5 py-5">

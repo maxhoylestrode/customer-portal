@@ -162,6 +162,7 @@ All uploaded files (ticket attachments, avatars, client documents, internal stor
 | `PATCH /api/admin/users/:id` | Update client |
 | `POST /api/admin/users/:id/reset-password` | Trigger password reset |
 | `GET /api/tickets/:id/attachments/:attachmentId` | Download/view a ticket attachment |
+| `GET/POST /api/tickets/:id/messages` | Chat thread on a ticket (separate from the status/activity log) |
 
 ### Staff routes (internal team — admin/staff/sales roles only)
 
@@ -188,6 +189,7 @@ Roles: `admin` (full access), `staff` (no client-role restrictions), `sales` (bl
 | `GET/POST /api/meetings/available-slots`, `DELETE /api/meetings/available-slots/:id` | Calendar availability |
 | `GET/POST /api/meetings`, `PUT/DELETE /api/meetings/:id` | Booked meetings |
 | `GET /api/users` | List internal accounts (assignee pickers) |
+| `GET /api/search?q=` | Global search across clients, notes, and (role-permitting) tickets/projects |
 
 ---
 

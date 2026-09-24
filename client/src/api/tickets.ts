@@ -1,5 +1,5 @@
 import api from './axios';
-import { Ticket, Attachment, TicketActivity } from '../types';
+import { Ticket, Attachment, TicketActivity, TicketMessage } from '../types';
 
 export const ticketsApi = {
   getAll: (params?: { status?: string; scope_flag?: string; client_id?: number }) =>
@@ -25,4 +25,10 @@ export const ticketsApi = {
 
   deleteAttachment: (ticketId: number, attachmentId: number) =>
     api.delete(`/tickets/${ticketId}/attachments/${attachmentId}`),
+
+  getMessages: (ticketId: number) =>
+    api.get<{ messages: TicketMessage[] }>(`/tickets/${ticketId}/messages`),
+
+  sendMessage: (ticketId: number, message: string) =>
+    api.post<{ message: TicketMessage }>(`/tickets/${ticketId}/messages`, { message }),
 };

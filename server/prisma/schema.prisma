@@ -32,6 +32,7 @@ model User {
 
   tickets        Ticket[]
   ticketActivity TicketActivity[]
+  ticketMessages TicketMessage[]
   refreshTokens  RefreshToken[]
 
   // staff-portal relations
@@ -65,8 +66,25 @@ model Ticket {
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   attachments Attachment[]
   activity    TicketActivity[]
+  messages    TicketMessage[]
 
   @@map("tickets")
+}
+
+// Free-form back-and-forth chat between the client and admin on a ticket —
+// distinct from TicketActivity, which is the status/priority/notes audit
+// trail and stays exactly as-is.
+model TicketMessage {
+  id        Int      @id @default(autoincrement())
+  ticketId  Int      @map("ticket_id")
+  userId    Int      @map("user_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_messages")
 }
 
 model Attachment {

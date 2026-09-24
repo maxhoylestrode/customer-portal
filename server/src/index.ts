@@ -18,6 +18,7 @@ import noteRoutes from './routes/notes';
 import generalNoteRoutes from './routes/generalNotes';
 import meetingRoutes from './routes/meetings';
 import staffUserRoutes from './routes/staffUsers';
+import searchRoutes from './routes/search';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -58,6 +59,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/general-notes', generalNoteRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/users', staffUserRoutes);
+app.use('/api/search', searchRoutes);
 
 // Error handler (must be last)
 app.use(errorHandler);

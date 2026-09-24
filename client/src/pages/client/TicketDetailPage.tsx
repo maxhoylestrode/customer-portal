@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/Layout';
 import StatusBadge from '../../components/StatusBadge';
 import PriorityBadge from '../../components/PriorityBadge';
 import { PageSpinner } from '../../components/Spinner';
+import TicketChat from '../../components/TicketChat';
 import { formatDate, formatDateTime, getActivityLabel, getScopeLabel } from '../../utils/formatters';
 import { Paperclip, Clock, ExternalLink, FileText } from 'lucide-react';
 
@@ -78,6 +79,9 @@ export default function TicketDetailPage() {
               </ul>
             </div>
           )}
+
+          {/* Chat */}
+          <TicketChat ticketId={ticket.id} />
 
           {/* Activity timeline */}
           <div className="card px-5 py-5">

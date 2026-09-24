@@ -130,6 +130,41 @@ export async function sendTicketStatusUpdate(
   });
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+export async function sendNewTicketMessage(
+  to: string,
+  recipientName: string,
+  senderName: string,
+  ticketId: number,
+  ticketTitle: string,
+  message: string,
+  viewUrl: string
+) {
+  const html = brandedEmail(
+    'New Message on Your Ticket',
+    `<p style="color:#4A4A4A;line-height:1.6;">Hi ${recipientName},</p>
+    <p style="color:#4A4A4A;line-height:1.6;"><strong>${senderName}</strong> sent a new message on ticket <strong>#${ticketId}: ${ticketTitle}</strong>:</p>
+    <table style="width:100%;margin:16px 0;background:#f4f8fb;border-radius:6px;padding:16px;border-left:4px solid #0D3040;">
+      <tr><td style="color:#4A4A4A;white-space:pre-wrap;line-height:1.6;">${escapeHtml(message)}</td></tr>
+    </table>
+    <a href="${viewUrl}" style="display:inline-block;background:#0D3040;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px;">Reply to this message</a>`
+  );
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `New message on Ticket #${ticketId}`,
+    html,
+  });
+}
+
 export async function sendInviteEmail(to: string, inviteToken: string) {
   const link = `${CLIENT_URL}/register?invite=${inviteToken}`;
   const html = brandedEmail(

@@ -41,6 +41,16 @@ export interface Attachment {
   uploaded_at: string;
 }
 
+export interface TicketMessage {
+  id: number;
+  ticket_id: number;
+  user_id: number;
+  message: string;
+  created_at: string;
+  author_name: string;
+  author_role: Role;
+}
+
 export interface TicketActivity {
   id: number;
   ticket_id: number;
