@@ -31,8 +31,9 @@ depending on carrying a folder around forever.
 2. Restore it into CapRover's Postgres.
 3. Backfill the old on-disk attachments into the database.
 4. Deploy this app to CapRover, pointed at that restored database.
-5. Test on a CapRover subdomain with the real migrated data before touching DNS.
-6. Cut over.
+5. Set up nightly off-site backups.
+6. Test on a CapRover subdomain with the real migrated data before touching DNS.
+7. Cut over.
 
 ## 1. Dump the database (on the old Ubuntu server)
 
@@ -85,9 +86,33 @@ DATABASE_URL="postgresql://<db_user>:<pass>@<caprover-postgres-host>:5432/apex_p
   npx prisma migrate deploy
 ```
 
-This only *adds* the new tables — it never touches or drops the existing
-`users`/`tickets`/`attachments`/`ticket_activity`/`refresh_tokens` rows you
-just restored.
+This adds the new tables and never drops your existing
+`users`/`tickets`/`attachments`/`ticket_activity`/`refresh_tokens` rows.
+
+The old server built its tables from `database/schema.sql`, which differs
+slightly from the baseline (some columns allowed NULLs, and a few foreign keys
+had different delete rules). The `20260928000000_reconcile_legacy_schema`
+migration fixes those automatically. It also lowercases stored emails where
+that can't clash with another account. Confirm the result matches exactly
+what the app expects:
+
+```bash
+DATABASE_URL="postgresql://<db_user>:<pass>@<caprover-postgres-host>:5432/apex_portal" \
+  npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+```
+
+It should print `No difference detected.` If it prints SQL instead, stop and
+don't cut over; that output is exactly what's different.
+
+**If `migrate deploy` stops with "Tickets with no owner"**: the old database
+has a ticket that isn't linked to any user. The migration refuses to guess or
+delete it. Assign it to the right client (`UPDATE tickets SET user_id = <id>
+WHERE id = <ticket id>;`), then:
+
+```bash
+npx prisma migrate resolve --rolled-back 20260928000000_reconcile_legacy_schema
+npx prisma migrate deploy
+```
 
 > If CapRover's Postgres isn't reachable from your machine directly, either
 > run these commands from a throwaway container/session inside the same
@@ -138,6 +163,7 @@ In the CapRover app's **App Configs**, set:
 | `ADMIN_EMAIL` | your admin notification address |
 | `CLIENT_URL` | the URL clients will use, e.g. `https://portal.apexstudiocodes.co.uk` |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | generate once with `node -e "console.log(require('web-push').generateVAPIDKeys())"` — see README |
+| `TRUST_PROXY_HOPS` | leave unset (defaults to `1`, CapRover's nginx). Set to `2` only if you also put Cloudflare's proxy in front, otherwise login rate limiting sees every visitor as the same IP |
 
 **Note on JWT secrets:** if you reuse the old server's `JWT_SECRET`/
 `JWT_REFRESH_SECRET`, everyone's existing login session (access + refresh
@@ -152,7 +178,14 @@ In **App Configs → Container HTTP Port**, set it to `3001` (matching
 The container's `CMD` runs `npx prisma migrate deploy` on every start before
 launching the server, so future deploys never need a manual migration step.
 
-## 6. Test before cutover
+## 6. Set up backups
+
+Before real clients use the new server, follow [`BACKUPS.md`](./BACKUPS.md).
+Everything, including every uploaded file, now lives in this one database,
+so it needs off-site backups from day one. Keep the `apex_portal.dump` from
+step 1 as well, as a copy of exactly what the old server had.
+
+## 7. Test before cutover
 
 CapRover gives every app a `<app-name>.<your-root-domain>` address
 automatically — open that first. Log in with the real migrated account,

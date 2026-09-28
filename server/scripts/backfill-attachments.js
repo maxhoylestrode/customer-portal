@@ -64,7 +64,8 @@ async function main() {
     const missing = [];
 
     for (const att of pending) {
-      const filePath = path.join(UPLOAD_DIR, att.filepath);
+      // The old server stored only multer's generated basename here
+      const filePath = path.join(UPLOAD_DIR, path.basename(att.filepath));
       if (!fs.existsSync(filePath)) {
         missing.push({ id: att.id, ticketId: att.ticketId, filename: att.filename, expectedAt: filePath });
         continue;

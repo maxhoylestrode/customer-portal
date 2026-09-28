@@ -10,4 +10,6 @@ client/build
 .gitignore
 README.md
 MIGRATION.md
+BACKUPS.md
+backup
 database

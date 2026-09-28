@@ -121,11 +121,35 @@ Open [http://localhost:5173](http://localhost:5173)
 2. They complete their name, email, password, and optional details
 3. On success, they're logged in automatically
 
-### Password reset (admin-triggered)
+### Password reset
 
-1. Admin goes to **Clients → [Client Name] → Send Password Reset Email**
-2. Client receives an email with a reset link valid for **1 hour**
-3. Client sets a new password at `/reset-password/<token>`
+Clients can do this themselves: **Forgotten your password?** on the login page
+emails them a reset link (valid for **1 hour**). The page gives the same
+answer whether or not the email has an account, so it can't be used to find
+out who your clients are.
+
+An admin can also trigger it from **Clients → [Client Name] → Send Password
+Reset Email**. Either way, resetting a password signs that account out on
+every other device.
+
+---
+
+## Security notes
+
+- **Sessions:** deactivating an account, changing someone's role, or resetting
+  a password takes effect immediately. The server checks the account on every
+  request instead of trusting what's baked into the login token.
+- **Brute force:** 10 failed logins per IP per 15 minutes, 5 password-reset
+  requests per IP per hour. Successful logins never count.
+- **Uploaded files** are served with a Content-Type worked out from the file
+  extension (never what the uploader's browser claimed), `nosniff`, and a
+  sandbox CSP, so an uploaded file can't run script in the portal. Non-ASCII
+  filenames (e.g. macOS screenshots) are stored and downloaded intact.
+- **Emails** escape everything user-supplied (names, ticket titles, notes,
+  chat messages).
+- **Emails are case-insensitive** for login and duplicate checks, and stored
+  lowercase.
+- `helmet` sets standard security headers and a CSP for the app itself.
 
 ---
 
@@ -140,6 +164,8 @@ apex-portal/
 ├── Dockerfile            # Multi-stage build: client + server → single runtime image
 ├── captain-definition    # Points CapRover at the Dockerfile
 ├── MIGRATION.md          # Moving the live database + attachments from the old server to CapRover
+├── backup/               # Nightly encrypted off-site Postgres backup (separate CapRover app)
+├── BACKUPS.md            # How to deploy, monitor and restore those backups
 └── .env.example          # Environment variable template
 ```
 
@@ -162,6 +188,9 @@ Set `NODE_ENV=production`, `PORT`/Container HTTP Port to `3001`, and the
 rest of the variables from `.env.example` in the CapRover app's config. The
 container runs `prisma migrate deploy` automatically on every start, so
 schema changes ship with the code — no manual migration step.
+
+**Backups:** every file lives in the database, so set up the nightly
+off-site backup in [`BACKUPS.md`](./BACKUPS.md) before real clients use it.
 
 **Migrating an existing production database and its ticket attachments from
 another server?** See [`MIGRATION.md`](./MIGRATION.md) — it covers the
@@ -214,6 +243,7 @@ A subscription that a push service reports as gone (the browser uninstalled, per
 | `POST /api/auth/logout` | Logout |
 | `GET /api/auth/me` | Current user |
 | `POST /api/auth/register` | Client self-registration (invite required) |
+| `POST /api/auth/forgot-password` | Request a reset link (always returns the same response) |
 | `POST /api/auth/reset-password/confirm` | Confirm password reset |
 | `GET /api/tickets` | List tickets |
 | `POST /api/tickets` | Create ticket |
