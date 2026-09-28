@@ -4,6 +4,9 @@ import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../api/auth';
 import { useToast } from './Toast';
 import GlobalSearch from './GlobalSearch';
+import { usePortal } from '../staff/context/PortalContext';
+
+const DEFAULT_PORTAL_NAME = 'Apex Portal';
 import {
   LayoutDashboard,
   Ticket,
@@ -139,14 +142,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const homeLink =
     user?.role === 'admin' ? (isStaffSection ? '/staff' : '/admin') : user?.role === 'staff' || user?.role === 'sales' ? '/staff' : '/dashboard';
 
+  // Branding set in Staff Settings. Until a custom name is saved, keep the
+  // original "Apex Studio" sidebar title clients already know.
+  const { logoUrl, portalName } = usePortal();
+  const sidebarTitle = portalName && portalName !== DEFAULT_PORTAL_NAME ? portalName : 'Apex Studio';
+
   const sidebar = (
     <aside className={`flex flex-col h-full w-64 shrink-0 ${isStaffSection ? 'bg-surface border-r border-gray-800 text-gray-100' : 'bg-[#0D3040] text-white'}`}>
       {/* Logo */}
       <div className={`px-5 py-5 border-b ${isStaffSection ? 'border-gray-800' : 'border-white/10'}`}>
         <Link to={homeLink} className="flex items-center gap-3">
-          <img src="/logo.png" alt="Apex Studio Codes" className="h-8 w-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <img src={logoUrl || '/logo.png'} alt={sidebarTitle} className="h-8 w-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           <div>
-            <p className="font-bold text-sm leading-tight">Apex Studio</p>
+            <p className="font-bold text-sm leading-tight">{sidebarTitle}</p>
             <p className={`text-xs ${isStaffSection ? 'text-gray-400' : 'text-blue-200'}`}>
               {isStaffSection ? 'Staff Portal' : 'Client Portal'}
             </p>
@@ -210,7 +218,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <button onClick={() => setMobileOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-semibold text-sm">Apex Portal</span>
+          <span className="font-semibold text-sm">{portalName || DEFAULT_PORTAL_NAME}</span>
         </header>
 
         <main className={`flex-1 overflow-y-auto ${isStaffSection ? 'bg-gray-950' : 'bg-gray-50'}`}>

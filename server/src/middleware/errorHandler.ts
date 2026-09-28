@@ -49,6 +49,10 @@ export function errorHandler(
     res.status(404).json({ error: 'Record not found' });
     return;
   }
+  if (code === 'P2003') {
+    res.status(409).json({ error: 'This is still linked to other records, so it can\'t be deleted yet' });
+    return;
+  }
 
   res.status(500).json({ error: 'Internal server error' });
 }

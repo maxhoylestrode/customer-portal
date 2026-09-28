@@ -28,6 +28,8 @@ model User {
   inviteTokenExpires   DateTime? @map("invite_token_expires") @db.Timestamptz
   passwordResetToken   String?   @map("password_reset_token") @db.VarChar(255)
   passwordResetExpires DateTime? @map("password_reset_expires") @db.Timestamptz
+  // Access tokens issued before this are rejected (password reset/change, deactivation)
+  sessionsRevokedAt    DateTime? @map("sessions_revoked_at") @db.Timestamptz
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   tickets           Ticket[]
@@ -37,17 +39,17 @@ model User {
   pushSubscriptions PushSubscription[]
 
   // staff-portal relations
-  assignedProjects Project[]           @relation("ProjectAssignees")
-  storageFiles     StorageFile[]
+  assignedProjects  Project[]           @relation("ProjectAssignees")
+  storageFiles      StorageFile[]
   clientNoteEntries Note[]
-  generalNotes     GeneralNote[]
-  managedClients   Client[]            @relation("SalesPerson")
-  availableSlots   AvailableSlot[]     @relation("AvailableSlots")
-  staffMeetings    Meeting[]           @relation("StaffMeetings")
-  bookedMeetings   Meeting[]           @relation("BookedMeetings")
-  storageAccess    StorageFileAccess[]
+  generalNotes      GeneralNote[]
+  managedClients    Client[]            @relation("SalesPerson")
+  availableSlots    AvailableSlot[]     @relation("AvailableSlots")
+  staffMeetings     Meeting[]           @relation("StaffMeetings")
+  bookedMeetings    Meeting[]           @relation("BookedMeetings")
+  storageAccess     StorageFileAccess[]
   // links a client-role portal login to the staff-managed Client profile
-  clientProfile    Client?             @relation("ClientPortalUser")
+  clientProfile     Client?             @relation("ClientPortalUser")
 
   @@map("users")
 }
@@ -78,12 +80,13 @@ model Ticket {
 model TicketMessage {
   id        Int      @id @default(autoincrement())
   ticketId  Int      @map("ticket_id")
-  userId    Int      @map("user_id")
+  // Null once the author's account is deleted; the message itself is kept
+  userId    Int?     @map("user_id")
   message   String
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("ticket_messages")
 }
@@ -151,24 +154,24 @@ model PushSubscription {
 // ─────────────────────────────────────────────────────────────
 
 model Client {
-  id            Int      @id @default(autoincrement())
-  name          String
-  company       String?
-  email         String?
-  phone         String?
-  address       String?
-  notes         String?
-  tags          String[] @default([])
-  hostingTier   String?  @map("hosting_tier")
+  id             Int      @id @default(autoincrement())
+  name           String
+  company        String?
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  tags           String[] @default([])
+  hostingTier    String?  @map("hosting_tier")
   // Deprecated: legacy on-disk path. New avatars are stored as bytes below.
-  avatarPath     String? @map("avatar_path")
-  avatarData     Bytes?  @map("avatar_data")
-  avatarMimetype String? @map("avatar_mimetype")
-  salesPersonId Int?     @map("sales_person_id")
+  avatarPath     String?  @map("avatar_path")
+  avatarData     Bytes?   @map("avatar_data")
+  avatarMimetype String?  @map("avatar_mimetype")
+  salesPersonId  Int?     @map("sales_person_id")
   // optional link to a client-role User who can log into the portal
-  portalUserId  Int?     @unique @map("portal_user_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  portalUserId   Int?     @unique @map("portal_user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   files       File[]
   projects    Project[]
@@ -195,9 +198,9 @@ model Note {
 }
 
 model File {
-  id       Int    @id @default(autoincrement())
-  clientId Int    @map("client_id")
-  filename String
+  id         Int      @id @default(autoincrement())
+  clientId   Int      @map("client_id")
+  filename   String
   // Deprecated: legacy on-disk path, kept for files uploaded before this
   // moved into the database.
   filepath   String
@@ -241,8 +244,8 @@ model Milestone {
 }
 
 model StorageFile {
-  id       Int    @id @default(autoincrement())
-  filename String
+  id         Int      @id @default(autoincrement())
+  filename   String
   // Deprecated: legacy on-disk path, kept for files uploaded before this
   // moved into the database.
   filepath   String
@@ -289,20 +292,20 @@ model AvailableSlot {
 }
 
 model Meeting {
-  id          Int            @id @default(autoincrement())
-  staffUserId Int            @map("staff_user_id")
-  slotId      Int?           @unique @map("slot_id")
+  id          Int      @id @default(autoincrement())
+  staffUserId Int      @map("staff_user_id")
+  slotId      Int?     @unique @map("slot_id")
   date        DateTime // the day of the meeting (UTC midnight)
-  startTime   String?        @map("start_time")
-  endTime     String?        @map("end_time")
-  clientName  String         @map("client_name")
-  clientPhone String?        @map("client_phone")
-  clientEmail String?        @map("client_email")
+  startTime   String?  @map("start_time")
+  endTime     String?  @map("end_time")
+  clientName  String   @map("client_name")
+  clientPhone String?  @map("client_phone")
+  clientEmail String?  @map("client_email")
   notes       String?
-  serviceType String         @map("service_type") // "Websites" | "Cyber Essentials"
-  createdBy   Int?           @map("created_by")
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
+  serviceType String   @map("service_type") // "Websites" | "Cyber Essentials"
+  createdBy   Int?     @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   staffUser User           @relation("StaffMeetings", fields: [staffUserId], references: [id], onDelete: Cascade)
   bookedBy  User?          @relation("BookedMeetings", fields: [createdBy], references: [id], onDelete: SetNull)
@@ -314,11 +317,11 @@ model Meeting {
 // Singleton row (id is always 1) holding portal branding — logo bytes and
 // portal name live here instead of local files so they survive redeploys.
 model Branding {
-  id            Int      @id @default(1)
-  portalName    String   @default("Apex Portal") @map("portal_name")
-  logoData      Bytes?   @map("logo_data")
-  logoMimetype  String?  @map("logo_mimetype")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(1)
+  portalName   String   @default("Apex Portal") @map("portal_name")
+  logoData     Bytes?   @map("logo_data")
+  logoMimetype String?  @map("logo_mimetype")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("branding")
 }

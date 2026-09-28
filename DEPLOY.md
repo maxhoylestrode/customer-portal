@@ -189,6 +189,16 @@ only adds tables and tidies column rules; it never deletes your data.
 > docker exec $PG psql -U apex -d apex_portal -c "DELETE FROM _prisma_migrations WHERE migration_name = '20260928000000_reconcile_legacy_schema' AND finished_at IS NULL"
 > ```
 > Then **Save & Restart** the app.
+>
+> **If it stops with "Accounts whose emails differ only by capitals"**, the
+> old database has two accounts like `Alice@x.com` and `alice@x.com`. Login
+> ignores capitals now, so it can't tell them apart. The message lists the
+> user ids. Change the email of the one that isn't used (or delete it), then
+> clear the failed attempt and restart as above:
+> ```bash
+> docker exec $PG psql -U apex -d apex_portal -c "UPDATE users SET email = 'old-duplicate@example.com' WHERE id = <unused id>"
+> docker exec $PG psql -U apex -d apex_portal -c "DELETE FROM _prisma_migrations WHERE migration_name = '20260928000000_reconcile_legacy_schema' AND finished_at IS NULL"
+> ```
 
 **e) Push notification keys.** Generate them from inside the running app:
 
@@ -257,7 +267,7 @@ hours. Copy its ping URL. It emails you if a night is missed or fails.
 ```
 DATABASE_URL=postgresql://apex:<password>@srv-captain--apex-db:5432/apex_portal
 BACKUP_REMOTE=backup:<bucket-name>
-BACKUP_PASSPHRASE=<long random passphrase: SAVE THIS IN YOUR PASSWORD MANAGER>
+BACKUP_PASSPHRASE=<required; long random passphrase: SAVE THIS IN YOUR PASSWORD MANAGER>
 BACKUP_PING_URL=<healthchecks.io ping URL>
 ```
 

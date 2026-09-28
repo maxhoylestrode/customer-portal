@@ -189,8 +189,17 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
       return res.status(404).json({ error: 'User not found.' });
     }
 
-    await prisma.user.delete({ where: { id } });
-    res.json({ message: 'User deleted.' });
+    // Company files outlive the person who uploaded them: hand them to the
+    // admin doing the deletion rather than blocking it or losing the files.
+    const [moved] = await prisma.$transaction([
+      prisma.storageFile.updateMany({ where: { uploadedBy: id }, data: { uploadedBy: req.user!.userId } }),
+      prisma.user.delete({ where: { id } }),
+    ]);
+    res.json({
+      message: moved.count
+        ? `User deleted. Their ${moved.count} stored file(s) now belong to you.`
+        : 'User deleted.',
+    });
   } catch (err: any) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'User not found.' });
     next(err);

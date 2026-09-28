@@ -316,9 +316,13 @@ export async function deleteTicket(req: Request, res: Response, next: NextFuncti
 
 export async function uploadAttachment(req: Request, res: Response, next: NextFunction) {
   try {
-    const { userId } = req.user!;
+    const { userId, role } = req.user!;
     const ticketId = parseInt(req.params.id);
     const files = req.files as Express.Multer.File[];
+
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, select: { userId: true } });
+    if (!ticket) throw new AppError('Ticket not found', 404);
+    if (role === 'client' && ticket.userId !== userId) throw new AppError('Not authorised', 403);
 
     if (!files || files.length === 0) throw new AppError('No files uploaded', 400);
 

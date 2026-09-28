@@ -64,8 +64,8 @@ export default function SettingsPage() {
   const handleDeleteUser = async (target) => {
     if (!confirm(`Delete user "${target.name}"? This cannot be undone.`)) return;
     try {
-      await api.delete(`/settings/users/${target.id}`);
-      toast.success('User deleted');
+      const { data } = await api.delete(`/settings/users/${target.id}`);
+      toast.success(data?.message || 'User deleted');
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to delete user');

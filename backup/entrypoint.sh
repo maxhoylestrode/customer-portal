@@ -3,6 +3,8 @@ set -eu
 
 : "${DATABASE_URL:?DATABASE_URL is required}"
 : "${BACKUP_REMOTE:?BACKUP_REMOTE is required, e.g. backup:apex-portal-backups}"
+# Backups hold every client file and message; never upload them unencrypted
+: "${BACKUP_PASSPHRASE:?BACKUP_PASSPHRASE is required so backups are encrypted}"
 
 # cron jobs don't inherit the container environment, so hand it over explicitly
 export -p > /etc/backup.env

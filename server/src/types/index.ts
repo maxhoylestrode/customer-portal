@@ -52,6 +52,7 @@ export interface TicketActivity {
 export interface JwtPayload {
   userId: number;
   role: Role;
+  iat?: number;
 }
 
 // Extend Express Request

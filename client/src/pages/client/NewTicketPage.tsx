@@ -18,6 +18,7 @@ type FormData = z.infer<typeof schema>;
 
 const MAX_FILES = 5;
 const MAX_SIZE_MB = 50;
+const MAX_TOTAL_MB = 100;
 
 export default function NewTicketPage() {
   const navigate = useNavigate();
@@ -62,6 +63,11 @@ export default function NewTicketPage() {
       }
       if (file.size > MAX_SIZE_MB * 1024 * 1024) {
         setFileError(`"${file.name}" exceeds the ${MAX_SIZE_MB}MB limit`);
+        continue;
+      }
+      const total = newFiles.reduce((sum, f) => sum + f.size, 0) + file.size;
+      if (total > MAX_TOTAL_MB * 1024 * 1024) {
+        setFileError(`Attachments can add up to ${MAX_TOTAL_MB}MB in total`);
         continue;
       }
       newFiles.push(file);
@@ -120,7 +126,7 @@ export default function NewTicketPage() {
           {/* File upload */}
           <div>
             <label className="label">Attachments <span className="text-gray-400 font-normal">(optional)</span></label>
-            <p className="text-xs text-gray-400 mb-3">Screenshots, screen recordings, or documents. Up to {MAX_FILES} files, {MAX_SIZE_MB}MB each.</p>
+            <p className="text-xs text-gray-400 mb-3">Screenshots, photos or documents. Up to {MAX_FILES} files, {MAX_SIZE_MB}MB each ({MAX_TOTAL_MB}MB in total).</p>
 
             <div
               className="border-2 border-dashed border-gray-200 rounded-lg p-5 text-center cursor-pointer hover:border-[#0D3040] transition-colors"

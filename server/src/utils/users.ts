@@ -10,6 +10,10 @@ export function emailMatches(email: unknown) {
   return { equals: normalizeEmail(email), mode: 'insensitive' as const };
 }
 
+// Kills refresh tokens and, via sessionsRevokedAt, any access token already issued
 export async function revokeSessions(userId: number): Promise<void> {
-  await prisma.refreshToken.deleteMany({ where: { userId } });
+  await prisma.$transaction([
+    prisma.refreshToken.deleteMany({ where: { userId } }),
+    prisma.user.update({ where: { id: userId }, data: { sessionsRevokedAt: new Date() } }),
+  ]);
 }

@@ -16,6 +16,20 @@ BEGIN
   END IF;
 END $$;
 
+-- Login matches emails case-insensitively, so two accounts that differ only
+-- by case would make a sign-in ambiguous. Stop and name them.
+DO $$
+DECLARE dupes TEXT;
+BEGIN
+  SELECT string_agg(ids, '; ') INTO dupes FROM (
+    SELECT lower(trim("email")) || ' (user ids ' || string_agg(id::text, ', ' ORDER BY id) || ')' AS ids
+    FROM "users" GROUP BY lower(trim("email")) HAVING count(*) > 1
+  ) d;
+  IF dupes IS NOT NULL THEN
+    RAISE EXCEPTION 'Accounts whose emails differ only by capitals: %. Change or remove one of each pair, then re-run migrations.', dupes;
+  END IF;
+END $$;
+
 -- Rows with no parent are unreachable in the app already
 DELETE FROM "attachments" WHERE "ticket_id" IS NULL;
 DELETE FROM "ticket_activity" WHERE "ticket_id" IS NULL;
@@ -57,10 +71,5 @@ ALTER TABLE "ticket_activity" ADD CONSTRAINT "ticket_activity_user_id_fkey" FORE
 ALTER TABLE "refresh_tokens" DROP CONSTRAINT IF EXISTS "refresh_tokens_user_id_fkey";
 ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- Store emails lowercase (login is case-insensitive either way). Skipped for
--- any address that would collide with another account's once lowercased.
-UPDATE "users" u SET "email" = lower(trim(u."email"))
-WHERE u."email" <> lower(trim(u."email"))
-  AND NOT EXISTS (
-    SELECT 1 FROM "users" o WHERE o."id" <> u."id" AND lower(trim(o."email")) = lower(trim(u."email"))
-  );
+-- Store emails lowercase (no collisions possible after the check above)
+UPDATE "users" SET "email" = lower(trim("email")) WHERE "email" <> lower(trim("email"));

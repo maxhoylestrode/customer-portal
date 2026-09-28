@@ -19,16 +19,16 @@ fail() {
   exit 1
 }
 
+[ -n "${BACKUP_PASSPHRASE:-}" ] || fail "BACKUP_PASSPHRASE is not set; refusing to create an unencrypted backup"
+
 echo "[backup] $(date '+%F %T') dumping database..."
 pg_dump -Fc -d "$DB_URL" -f "$WORK/$FILE" || fail "pg_dump could not dump the database"
 pg_restore --list "$WORK/$FILE" > /dev/null || fail "the dump file is unreadable"
 
-if [ -n "${BACKUP_PASSPHRASE:-}" ]; then
-  printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --quiet --passphrase-fd 0 --pinentry-mode loopback \
-    --symmetric --cipher-algo AES256 -o "$WORK/$FILE.gpg" "$WORK/$FILE" || fail "encryption failed"
-  rm "$WORK/$FILE"
-  FILE="$FILE.gpg"
-fi
+printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --quiet --passphrase-fd 0 --pinentry-mode loopback \
+  --symmetric --cipher-algo AES256 -o "$WORK/$FILE.gpg" "$WORK/$FILE" || fail "encryption failed"
+rm "$WORK/$FILE"
+FILE="$FILE.gpg"
 
 SIZE=$(du -h "$WORK/$FILE" | cut -f1)
 rclone copyto "$WORK/$FILE" "$BACKUP_REMOTE/$FILE" || fail "upload to $BACKUP_REMOTE failed"

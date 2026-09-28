@@ -27,8 +27,9 @@ export async function listMessages(req: Request, res: Response, next: NextFuncti
         user_id: m.userId,
         message: m.message,
         created_at: m.createdAt,
-        author_name: m.user.name,
-        author_role: m.user.role,
+        // Only staff accounts can be deleted while their tickets remain
+        author_name: m.user?.name ?? 'Former team member',
+        author_role: m.user?.role ?? 'admin',
       })),
     });
   } catch (err) {
@@ -51,9 +52,9 @@ export async function createMessage(req: Request, res: Response, next: NextFunct
     if (!ticket) throw new AppError('Ticket not found', 404);
     if (role === 'client' && ticket.userId !== userId) throw new AppError('Not authorised', 403);
 
+    const author = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { name: true, role: true } });
     const created = await prisma.ticketMessage.create({
       data: { ticketId, userId, message: message.trim() },
-      include: { user: { select: { id: true, name: true, role: true } } },
     });
 
     // Notify whichever side didn't send the message — email (unchanged) and push
@@ -76,7 +77,7 @@ export async function createMessage(req: Request, res: Response, next: NextFunct
       sendNewTicketMessage(
         ticket.user.email,
         ticket.user.name,
-        created.user.name,
+        author.name,
         ticketId,
         ticket.title,
         message.trim(),
@@ -84,7 +85,7 @@ export async function createMessage(req: Request, res: Response, next: NextFunct
       ).catch(console.error);
       sendPushToUser(ticket.user.id, {
         title: `New message — Ticket #${ticketId}`,
-        body: `${created.user.name}: ${message.trim()}`,
+        body: `${author.name}: ${message.trim()}`,
         url: `/tickets/${ticketId}`,
       }).catch(console.error);
     }
@@ -96,8 +97,8 @@ export async function createMessage(req: Request, res: Response, next: NextFunct
         user_id: created.userId,
         message: created.message,
         created_at: created.createdAt,
-        author_name: created.user.name,
-        author_role: created.user.role,
+        author_name: author.name,
+        author_role: author.role,
       },
     });
   } catch (err) {

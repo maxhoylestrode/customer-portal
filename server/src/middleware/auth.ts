@@ -24,10 +24,16 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
   try {
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { role: true, isActive: true },
+      select: { role: true, isActive: true, sessionsRevokedAt: true },
     });
     if (!user || !user.isActive) {
       res.status(401).json({ error: 'Account is no longer active' });
+      return;
+    }
+    // JWT iat has 1s resolution, so compare whole seconds: the fresh token a
+    // password change issues in the same second as the revocation stays valid.
+    if (user.sessionsRevokedAt && (payload.iat ?? 0) < Math.floor(user.sessionsRevokedAt.getTime() / 1000)) {
+      res.status(401).json({ error: 'Session has been signed out' });
       return;
     }
     req.user = { userId: payload.userId, role: user.role as Role };

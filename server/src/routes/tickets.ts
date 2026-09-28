@@ -13,6 +13,9 @@ import { listMessages, createMessage } from '../controllers/ticketMessageControl
 import { authenticate, requireAdmin, requireRole } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 import { convertHeicUploads } from '../utils/heic';
+import { maxRequestSize } from '../middleware/requestSize';
+
+const MAX_TICKET_UPLOAD_MB = 100;
 
 const router = Router();
 
@@ -21,12 +24,12 @@ const router = Router();
 router.use(authenticate, requireRole('client', 'admin'));
 
 router.get('/', getTickets);
-router.post('/', upload.array('attachments', 5), convertHeicUploads, createTicket);
+router.post('/', maxRequestSize(MAX_TICKET_UPLOAD_MB), upload.array('attachments', 5), convertHeicUploads, createTicket);
 router.get('/:id', getTicket);
 router.patch('/:id', updateTicket);
 router.delete('/:id', requireAdmin, deleteTicket);
 
-router.post('/:id/attachments', upload.array('attachments', 5), convertHeicUploads, uploadAttachment);
+router.post('/:id/attachments', maxRequestSize(MAX_TICKET_UPLOAD_MB), upload.array('attachments', 5), convertHeicUploads, uploadAttachment);
 router.get('/:id/attachments/:attachmentId', downloadAttachment);
 router.delete('/:id/attachments/:attachmentId', deleteAttachment);
 
