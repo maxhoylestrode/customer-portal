@@ -6,7 +6,7 @@ import { AppError } from './errorHandler';
 
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   file.originalname = decodeUploadName(file.originalname);
-  const allowed = ['.txt', '.pdf', '.docx', '.doc', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.csv', '.xlsx', '.zip'];
+  const allowed = ['.txt', '.pdf', '.docx', '.doc', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.heic', '.heif', '.csv', '.xlsx', '.zip'];
   const ext = path.extname(file.originalname).toLowerCase();
   if (allowed.includes(ext)) {
     cb(null, true);

@@ -3,7 +3,7 @@ import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const ACCEPTED = '.pdf,.txt,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,.csv,.xlsx,.zip';
+const ACCEPTED = '.pdf,.txt,.doc,.docx,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,.csv,.xlsx,.zip';
 
 /* ── helpers ──────────────────────────────────────────────────────────────── */
 function formatBytes(bytes) {

@@ -5,6 +5,7 @@ import * as notes from '../controllers/noteController';
 import { authenticate, requireStaff, denyRole } from '../middleware/auth';
 import { clientFileUpload } from '../middleware/clientFileUpload';
 import { avatarUpload } from '../middleware/imageUpload';
+import { convertHeicUploads } from '../utils/heic';
 
 const router = Router();
 
@@ -21,12 +22,12 @@ router.delete('/:id', denyRole('sales'), clients.remove); // Sales cannot delete
 router.put('/:id/portal-link', clients.linkPortalUser);
 
 // Avatar
-router.post('/:id/avatar', avatarUpload.single('avatar'), clients.uploadAvatar);
+router.post('/:id/avatar', avatarUpload.single('avatar'), convertHeicUploads, clients.uploadAvatar);
 router.get('/:id/avatar', clients.getAvatar);
 router.delete('/:id/avatar', clients.deleteAvatar);
 
 // File uploads scoped to client
-router.post('/:id/files', clientFileUpload.single('file'), fileCtrl.upload);
+router.post('/:id/files', clientFileUpload.single('file'), convertHeicUploads, fileCtrl.upload);
 
 // Notes scoped to client
 router.get('/:clientId/notes', notes.list);

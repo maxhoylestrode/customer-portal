@@ -79,7 +79,7 @@ export default function ClientDetailPage() {
               </svg>
               <input
                 type="file"
-                accept=".jpg,.jpeg,.png,.webp,.svg,.gif"
+                accept=".jpg,.jpeg,.png,.webp,.svg,.gif,.heic,.heif"
                 className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files[0];
@@ -567,7 +567,7 @@ function FileSection({ clientId, files, onUpdate }) {
           <h2 className="text-lg font-semibold">Files ({files?.length || 0})</h2>
           <label className="cursor-pointer rounded-lg bg-surface-lighter px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-600">
             {uploading ? 'Uploading…' : '+ Upload'}
-            <input type="file" className="hidden" accept=".txt,.pdf,.docx,.doc,.png,.jpg,.jpeg,.webp,.gif" onChange={handleUpload} disabled={uploading} />
+            <input type="file" className="hidden" accept=".txt,.pdf,.docx,.doc,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif" onChange={handleUpload} disabled={uploading} />
           </label>
         </div>
         {!files?.length ? (

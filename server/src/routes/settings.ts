@@ -2,13 +2,14 @@ import { Router } from 'express';
 import * as settings from '../controllers/settingsController';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { logoUpload } from '../middleware/imageUpload';
+import { convertHeicUploads } from '../utils/heic';
 
 const router = Router();
 
 // Branding (logo + portal name) — logo/branding writes are admin only; reads are public
 router.get('/logo', settings.getLogo);
 router.get('/logo/image', settings.getLogoImage);
-router.post('/logo', authenticate, requireAdmin, logoUpload.single('logo'), settings.uploadLogo);
+router.post('/logo', authenticate, requireAdmin, logoUpload.single('logo'), convertHeicUploads, settings.uploadLogo);
 router.delete('/logo', authenticate, requireAdmin, settings.deleteLogo);
 
 router.get('/branding', settings.getBranding);

@@ -1,4 +1,5 @@
 import multer from 'multer';
+import path from 'path';
 import { Request } from 'express';
 import { decodeUploadName } from '../utils/files';
 import { AppError } from './errorHandler';
@@ -11,10 +12,12 @@ const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFil
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain',
   ];
-  if (allowed.includes(file.mimetype)) {
+  // Desktop browsers often send HEIC with a blank or generic type, so trust the extension for those
+  const heic = ['.heic', '.heif'].includes(path.extname(file.originalname).toLowerCase());
+  if (allowed.includes(file.mimetype) || file.mimetype.startsWith('image/hei') || heic) {
     cb(null, true);
   } else {
-    cb(new AppError('File type not allowed. Accepted: images, PDF, DOCX, TXT', 400));
+    cb(new AppError('File type not allowed. Accepted: photos and images (including iPhone HEIC), PDF, DOCX, TXT', 400));
   }
 };
 

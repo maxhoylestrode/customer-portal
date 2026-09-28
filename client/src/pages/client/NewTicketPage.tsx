@@ -128,13 +128,13 @@ export default function NewTicketPage() {
             >
               <Upload className="w-6 h-6 text-gray-300 mx-auto mb-2" />
               <p className="text-sm text-gray-500">Click to upload files</p>
-              <p className="text-xs text-gray-400 mt-1">JPG, PNG, PDF, DOCX, TXT</p>
+              <p className="text-xs text-gray-400 mt-1">Photos (including iPhone), screenshots, PDF, DOCX, TXT</p>
             </div>
             <input
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,.pdf,.docx,.txt"
+              accept="image/*,.heic,.heif,.pdf,.docx,.txt"
               className="hidden"
               onChange={handleFileChange}
             />
