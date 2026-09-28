@@ -26,9 +26,8 @@ Names used below (change them if you like, but keep them consistent):
 
 ## Before you start
 
-- [ ] The code is merged into `main` on GitHub (it's currently on the
-      `claude/practical-albattani-b78pki` branch). You can also point
-      CapRover at that branch directly, but `main` is tidier.
+- [ ] The pull request into `master` on GitHub is merged. CapRover deploys
+      from `master`; `main` is left as it was.
 - [ ] SSH access to both the old server and the CapRover server.
 - [ ] A GitHub personal access token CapRover can use to pull the repo:
       GitHub → Settings → Developer settings → Fine-grained tokens → only
@@ -152,7 +151,7 @@ real domain. Save.
 | Field | Value |
 |---|---|
 | Repository | `github.com/maxhoylestrode/customer-portal` |
-| Branch | `main` |
+| Branch | `master` |
 | Username | your GitHub username |
 | Password | the personal access token |
 
@@ -212,7 +211,7 @@ everyone's existing push subscriptions.
 **f) Auto-deploy on push (optional).** Copy the webhook URL shown under
 Method 3. In GitHub → repo **Settings → Webhooks → Add webhook**: paste it,
 content type `application/json`, **Just the push event**. Every push to
-`main` then redeploys the portal.
+`master` then redeploys the portal.
 
 ---
 
@@ -383,7 +382,7 @@ permanent record of exactly what the old server had.
 
 ## Everyday operations
 
-- **Deploying changes:** push to `main` (with the webhook) or **Force build**.
+- **Deploying changes:** push to `master` (with the webhook) or **Force build**.
   Database migrations run automatically on every start.
 - **Logs:** each app's page → **App Logs**.
 - **Restoring a backup:** see [`BACKUPS.md`](./BACKUPS.md).
