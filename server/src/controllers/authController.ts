@@ -6,17 +6,23 @@ import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendPasswordResetEmail } from '../services/emailService';
 import { JwtPayload, Role } from '../types';
+import { normalizeEmail, emailMatches, revokeSessions } from '../utils/users';
 
 const ACCESS_TOKEN_EXPIRY = '15m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 const REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+const MIN_PASSWORD_LENGTH = 8;
 
 function generateAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: ACCESS_TOKEN_EXPIRY });
 }
 
 function generateRefreshToken(payload: JwtPayload): string {
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, { expiresIn: REFRESH_TOKEN_EXPIRY });
+  // jwtid keeps two sessions issued in the same second from getting identical tokens
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, {
+    expiresIn: REFRESH_TOKEN_EXPIRY,
+    jwtid: crypto.randomBytes(16).toString('hex'),
+  });
 }
 
 function setTokenCookies(res: Response, accessToken: string, refreshToken: string) {
@@ -35,12 +41,46 @@ function setTokenCookies(res: Response, accessToken: string, refreshToken: strin
   });
 }
 
+export async function startSession(res: Response, userId: number, role: Role) {
+  const accessToken = generateAccessToken({ userId, role });
+  const refreshToken = generateRefreshToken({ userId, role });
+
+  await prisma.refreshToken.deleteMany({ where: { userId, expiresAt: { lt: new Date() } } });
+  await prisma.refreshToken.create({
+    data: { userId, token: refreshToken, expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS) },
+  });
+
+  setTokenCookies(res, accessToken, refreshToken);
+}
+
+function clearTokenCookies(res: Response) {
+  res.clearCookie('access_token');
+  res.clearCookie('refresh_token', { path: '/api/auth/refresh' });
+}
+
+async function issuePasswordReset(user: { id: number; email: string; name: string }) {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordResetToken: hashedToken, passwordResetExpires: expires },
+  });
+
+  sendPasswordResetEmail(user.email, user.name, rawToken).catch(console.error);
+}
+
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, email, password, phone, company_name, website_url, invite } = req.body;
+    const { name, password, phone, company_name, website_url, invite } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     if (!name || !email || !password) {
       throw new AppError('Name, email and password are required', 400);
+    }
+    if (String(password).length < MIN_PASSWORD_LENGTH) {
+      throw new AppError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
     }
 
     if (!invite) {
@@ -58,7 +98,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 
     // Check email not already taken (by another real user)
     const emailTaken = await prisma.user.findFirst({
-      where: { email, id: { not: userId } },
+      where: { email: emailMatches(email), id: { not: userId } },
     });
     if (emailTaken) {
       throw new AppError('Email address is already registered', 409);
@@ -81,15 +121,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       select: { id: true, name: true, email: true, role: true },
     });
 
-    const role = user.role as Role;
-    const accessToken = generateAccessToken({ userId: user.id, role });
-    const refreshToken = generateRefreshToken({ userId: user.id, role });
-
-    await prisma.refreshToken.create({
-      data: { userId: user.id, token: refreshToken, expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS) },
-    });
-
-    setTokenCookies(res, accessToken, refreshToken);
+    await startSession(res, user.id, user.role as Role);
     res.status(201).json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     next(err);
@@ -98,10 +130,11 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = normalizeEmail(req.body.email);
     if (!email || !password) throw new AppError('Email and password are required', 400);
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst({ where: { email: emailMatches(email) } });
     if (!user) throw new AppError('Invalid email or password', 401);
 
     if (!user.isActive) {
@@ -115,15 +148,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new AppError('Invalid email or password', 401);
 
-    const role = user.role as Role;
-    const accessToken = generateAccessToken({ userId: user.id, role });
-    const refreshToken = generateRefreshToken({ userId: user.id, role });
-
-    await prisma.refreshToken.create({
-      data: { userId: user.id, token: refreshToken, expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS) },
-    });
-
-    setTokenCookies(res, accessToken, refreshToken);
+    await startSession(res, user.id, user.role as Role);
     res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     next(err);
@@ -147,19 +172,20 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
     });
     if (!stored) throw new AppError('Refresh token not found or expired', 401);
 
-    // Rotate refresh token
     await prisma.refreshToken.delete({ where: { id: stored.id } });
-    const newAccessToken = generateAccessToken({ userId: payload.userId, role: payload.role });
-    const newRefreshToken = generateRefreshToken({ userId: payload.userId, role: payload.role });
-    await prisma.refreshToken.create({
-      data: {
-        userId: payload.userId,
-        token: newRefreshToken,
-        expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
-      },
-    });
 
-    setTokenCookies(res, newAccessToken, newRefreshToken);
+    // Re-read the account rather than trusting the old token: a deactivated
+    // user must not be able to refresh, and a role change must take effect.
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, role: true, isActive: true, passwordHash: true },
+    });
+    if (!user || !user.isActive || !user.passwordHash) {
+      clearTokenCookies(res);
+      throw new AppError('Session is no longer valid', 401);
+    }
+
+    await startSession(res, user.id, user.role as Role);
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -172,8 +198,7 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
     if (token) {
       await prisma.refreshToken.deleteMany({ where: { token } });
     }
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token', { path: '/api/auth/refresh' });
+    clearTokenCookies(res);
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -215,23 +240,33 @@ export async function getMe(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+// Admin-triggered reset for a specific account
 export async function requestPasswordReset(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = parseInt(req.params.id);
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new AppError('User not found', 404);
 
-    const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordResetToken: hashedToken, passwordResetExpires: expires },
-    });
-
-    sendPasswordResetEmail(user.email, user.name, rawToken).catch(console.error);
+    await issuePasswordReset(user);
     res.json({ ok: true, message: 'Password reset email sent' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Public self-service reset. Always gives the same answer so it can't be
+// used to find out which emails have accounts.
+export async function forgotPassword(req: Request, res: Response, next: NextFunction) {
+  try {
+    const email = normalizeEmail(req.body.email);
+    if (!email) throw new AppError('Email is required', 400);
+
+    const user = await prisma.user.findFirst({ where: { email: emailMatches(email) } });
+    if (user && user.isActive && user.passwordHash) {
+      await issuePasswordReset(user);
+    }
+
+    res.json({ ok: true, message: 'If an account exists for that email, a reset link is on its way.' });
   } catch (err) {
     next(err);
   }
@@ -244,7 +279,7 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
 
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
-    if (email !== undefined) data.email = email;
+    if (email !== undefined) data.email = normalizeEmail(email);
     if (phone !== undefined) data.phone = phone || null;
     if (company_name !== undefined) data.companyName = company_name || null;
     if (website_url !== undefined) data.websiteUrl = website_url || null;
@@ -252,7 +287,8 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
     if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
 
     if (email !== undefined) {
-      const existing = await prisma.user.findFirst({ where: { email, id: { not: userId } } });
+      if (!data.email) throw new AppError('Email cannot be empty', 400);
+      const existing = await prisma.user.findFirst({ where: { email: emailMatches(email), id: { not: userId } } });
       if (existing) throw new AppError('Email address is already in use', 409);
     }
 
@@ -286,8 +322,8 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
     if (!current_password || !new_password) {
       throw new AppError('Current password and new password are required', 400);
     }
-    if (new_password.length < 8) {
-      throw new AppError('New password must be at least 8 characters', 400);
+    if (new_password.length < MIN_PASSWORD_LENGTH) {
+      throw new AppError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -299,6 +335,10 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
     const newHash = await bcrypt.hash(new_password, 12);
     await prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } });
 
+    // Sign out every other device, keep this one logged in
+    await revokeSessions(userId);
+    await startSession(res, userId, user.role as Role);
+
     res.json({ ok: true, message: 'Password changed successfully' });
   } catch (err) {
     next(err);
@@ -309,7 +349,9 @@ export async function confirmPasswordReset(req: Request, res: Response, next: Ne
   try {
     const { token, password } = req.body;
     if (!token || !password) throw new AppError('Token and new password are required', 400);
-    if (password.length < 8) throw new AppError('Password must be at least 8 characters', 400);
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      throw new AppError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`, 400);
+    }
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
     const user = await prisma.user.findFirst({
@@ -325,6 +367,7 @@ export async function confirmPasswordReset(req: Request, res: Response, next: Ne
       where: { id: user.id },
       data: { passwordHash, passwordResetToken: null, passwordResetExpires: null },
     });
+    await revokeSessions(user.id);
 
     res.json({ ok: true, message: 'Password reset successful' });
   } catch (err) {

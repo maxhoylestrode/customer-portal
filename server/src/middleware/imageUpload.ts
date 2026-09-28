@@ -1,14 +1,17 @@
 import multer from 'multer';
 import path from 'path';
 import { Request } from 'express';
+import { decodeUploadName } from '../utils/files';
+import { AppError } from './errorHandler';
 
 const imageFileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  file.originalname = decodeUploadName(file.originalname);
   const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.svg', '.ico', '.gif'];
   const ext = path.extname(file.originalname).toLowerCase();
   if (allowed.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed (.jpg, .png, .webp, .svg, .gif, .ico)'));
+    cb(new AppError('Only image files are allowed (.jpg, .png, .webp, .svg, .gif, .ico)', 400));
   }
 };
 

@@ -12,6 +12,7 @@ import { PortalProvider } from './staff/context/PortalContext';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 
 // Client pages
 import ClientDashboard from './pages/client/Dashboard';
@@ -64,6 +65,7 @@ export default function App() {
               <Route element={<PublicRoute />}>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               </Route>
 
               {/* Password reset (always accessible) */}

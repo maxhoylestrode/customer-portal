@@ -62,7 +62,7 @@ model Ticket {
   priority    String   @default("normal") @db.VarChar(20)
   adminNotes  String?  @map("admin_notes")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   attachments Attachment[]

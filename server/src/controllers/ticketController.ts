@@ -6,6 +6,11 @@ import { sendNewTicketNotification, sendTicketStatusUpdate } from '../services/e
 import { sendPushToUser, sendPushToRole } from '../services/pushService';
 import path from 'path';
 import fs from 'fs';
+import { sendStoredFile, legacyUploadPath } from '../utils/files';
+
+const TICKET_STATUSES = ['pending', 'in_progress', 'complete', 'out_of_scope'];
+const SCOPE_FLAGS = ['unknown', 'in_scope', 'out_of_scope'];
+const PRIORITIES = ['low', 'normal', 'high'];
 
 const SORTABLE: Record<string, keyof Prisma.TicketOrderByWithRelationInput> = {
   created_at: 'createdAt',
@@ -209,6 +214,10 @@ export async function updateTicket(req: Request, res: Response, next: NextFuncti
     if (role === 'admin') {
       const { status, scope_flag, priority, admin_notes } = req.body;
 
+      if (status !== undefined && !TICKET_STATUSES.includes(status)) throw new AppError('Invalid status', 400);
+      if (scope_flag !== undefined && !SCOPE_FLAGS.includes(scope_flag)) throw new AppError('Invalid scope', 400);
+      if (priority !== undefined && !PRIORITIES.includes(priority)) throw new AppError('Invalid priority', 400);
+
       if (status !== undefined) {
         data.status = status;
 
@@ -294,7 +303,7 @@ export async function deleteTicket(req: Request, res: Response, next: NextFuncti
     // Best-effort cleanup of pre-migration attachments that still only exist on disk
     const attachments = await prisma.attachment.findMany({ where: { ticketId, data: null }, select: { filepath: true } });
     for (const att of attachments) {
-      const filePath = path.join(__dirname, '../../uploads', att.filepath);
+      const filePath = legacyUploadPath(att.filepath);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
 
@@ -365,18 +374,14 @@ export async function downloadAttachment(req: Request, res: Response, next: Next
       throw new AppError('Not authorised', 403);
     }
 
-    if (attachment.data) {
-      res.setHeader('Content-Type', attachment.mimetype || 'application/octet-stream');
-      res.setHeader('Content-Disposition', `inline; filename="${attachment.filename}"`);
-      res.setHeader('Cache-Control', 'private, max-age=3600');
-      res.send(Buffer.from(attachment.data));
-      return;
+    let data: Uint8Array | null = attachment.data;
+    if (!data) {
+      // Fall back to disk for pre-migration attachments
+      const filePath = legacyUploadPath(attachment.filepath);
+      if (!fs.existsSync(filePath)) throw new AppError('Attachment file not found', 404);
+      data = fs.readFileSync(filePath);
     }
-
-    // Fall back to disk for pre-migration attachments
-    const filePath = path.join(__dirname, '../../uploads', attachment.filepath);
-    if (!fs.existsSync(filePath)) throw new AppError('Attachment file not found', 404);
-    res.sendFile(filePath);
+    sendStoredFile(res, { data, filename: attachment.filename, mimetype: attachment.mimetype });
   } catch (err) {
     next(err);
   }
@@ -401,7 +406,7 @@ export async function deleteAttachment(req: Request, res: Response, next: NextFu
 
     if (!attachment.data) {
       // Pre-migration attachment — clean up its on-disk file too
-      const filePath = path.join(__dirname, '../../uploads', attachment.filepath);
+      const filePath = legacyUploadPath(attachment.filepath);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
 

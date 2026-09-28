@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
+import { sendStoredFile, readLegacyFile } from '../utils/files';
 
 // Visibility rules:
 //   - admins see everything
@@ -184,16 +185,9 @@ export async function download(req: Request, res: Response, next: NextFunction) 
     if (!file) return res.status(404).json({ error: 'File not found' });
     if (!canSeeFile(file, req.user!.userId, req.user!.role)) return res.status(403).json({ error: 'Access denied' });
 
-    if (file.data) {
-      res.setHeader('Content-Type', file.mimetype || 'application/octet-stream');
-      res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
-      res.send(Buffer.from(file.data));
-      return;
-    }
-
-    const absolute = path.resolve(file.filepath);
-    if (!fs.existsSync(absolute)) return res.status(404).json({ error: 'File not found on disk' });
-    res.download(absolute, file.filename);
+    const data = file.data ?? readLegacyFile(file.filepath);
+    if (!data) return res.status(404).json({ error: 'File not found' });
+    sendStoredFile(res, { data, filename: file.filename, mimetype: file.mimetype }, { disposition: 'attachment' });
   } catch (err) {
     next(err);
   }
@@ -208,19 +202,9 @@ export async function view(req: Request, res: Response, next: NextFunction) {
     if (!file) return res.status(404).json({ error: 'File not found' });
     if (!canSeeFile(file, req.user!.userId, req.user!.role)) return res.status(403).json({ error: 'Access denied' });
 
-    const mime = file.mimetype || 'application/octet-stream';
-    res.setHeader('Content-Type', mime);
-    res.setHeader('Content-Disposition', `inline; filename="${file.filename}"`);
-    res.setHeader('Cache-Control', 'private, max-age=3600');
-
-    if (file.data) {
-      res.send(Buffer.from(file.data));
-      return;
-    }
-
-    const absolute = path.resolve(file.filepath);
-    if (!fs.existsSync(absolute)) return res.status(404).json({ error: 'File not found on disk' });
-    fs.createReadStream(absolute).pipe(res);
+    const data = file.data ?? readLegacyFile(file.filepath);
+    if (!data) return res.status(404).json({ error: 'File not found' });
+    sendStoredFile(res, { data, filename: file.filename, mimetype: file.mimetype });
   } catch (err) {
     next(err);
   }

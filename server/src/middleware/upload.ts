@@ -1,7 +1,10 @@
 import multer from 'multer';
 import { Request } from 'express';
+import { decodeUploadName } from '../utils/files';
+import { AppError } from './errorHandler';
 
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  file.originalname = decodeUploadName(file.originalname);
   const allowed = [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
     'application/pdf',
@@ -11,7 +14,7 @@ const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFil
   if (allowed.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('File type not allowed. Accepted: images, PDF, DOCX, TXT'));
+    cb(new AppError('File type not allowed. Accepted: images, PDF, DOCX, TXT', 400));
   }
 };
 

@@ -5,6 +5,8 @@ import fs from 'fs';
 import prisma from '../config/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendInviteEmail } from '../services/emailService';
+import { legacyUploadPath } from '../utils/files';
+import { normalizeEmail, emailMatches, revokeSessions } from '../utils/users';
 
 export async function listUsers(req: Request, res: Response, next: NextFunction) {
   try {
@@ -36,10 +38,14 @@ export async function listUsers(req: Request, res: Response, next: NextFunction)
 
 export async function createUser(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, email, phone, company_name, website_url, client_notes } = req.body;
+    const { name, phone, company_name, website_url, client_notes } = req.body;
+    const email = normalizeEmail(req.body.email);
 
     if (!email) throw new AppError('Email is required', 400);
     if (!name) throw new AppError('Name is required', 400);
+
+    const taken = await prisma.user.findFirst({ where: { email: emailMatches(email) } });
+    if (taken) throw new AppError('An account with that email already exists', 409);
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
@@ -70,20 +76,21 @@ export async function createUser(req: Request, res: Response, next: NextFunction
 
 export async function generateInviteLink(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, name } = req.body;
+    const { name } = req.body;
+    const email = normalizeEmail(req.body.email);
     if (!email) throw new AppError('Email is required', 400);
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findFirst({ where: { email: emailMatches(email) } });
     if (existing && existing.passwordHash) {
       throw new AppError('A user with that email already has an account', 409);
     }
 
     if (existing) {
       await prisma.user.update({
-        where: { email },
+        where: { id: existing.id },
         data: { inviteToken: rawToken, inviteTokenExpires: expires },
       });
     } else {
@@ -114,17 +121,23 @@ export async function updateUser(req: Request, res: Response, next: NextFunction
 
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
-    if (email !== undefined) data.email = email;
+    if (email !== undefined) {
+      data.email = normalizeEmail(email);
+      if (!data.email) throw new AppError('Email cannot be empty', 400);
+      const taken = await prisma.user.findFirst({ where: { email: emailMatches(email), id: { not: userId } } });
+      if (taken) throw new AppError('An account with that email already exists', 409);
+    }
     if (phone !== undefined) data.phone = phone || null;
     if (company_name !== undefined) data.companyName = company_name || null;
     if (website_url !== undefined) data.websiteUrl = website_url || null;
     if (client_notes !== undefined) data.clientNotes = client_notes || null;
-    if (is_active !== undefined) data.isActive = is_active;
+    if (is_active !== undefined) data.isActive = Boolean(is_active);
 
     if (Object.keys(data).length === 0) throw new AppError('No fields to update', 400);
 
     const user = await prisma.user.update({ where: { id: userId }, data }).catch(() => null);
     if (!user) throw new AppError('User not found', 404);
+    if (data.isActive === false) await revokeSessions(userId);
 
     res.json({
       user: {
@@ -285,11 +298,12 @@ export async function listAdmins(req: Request, res: Response, next: NextFunction
 
 export async function createAdmin(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, email, password } = req.body;
+    const { name, password } = req.body;
+    const email = normalizeEmail(req.body.email);
     if (!name || !email || !password) throw new AppError('Name, email, and password are required', 400);
     if (password.length < 8) throw new AppError('Password must be at least 8 characters', 400);
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findFirst({ where: { email: emailMatches(email) } });
     if (existing) throw new AppError('An account with that email already exists', 409);
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -312,18 +326,19 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
     if (!user) throw new AppError('User not found', 404);
     if (user.role !== 'client') throw new AppError('Cannot delete admin accounts', 403);
 
-    const attachments = await prisma.attachment.findMany({
-      where: { ticket: { userId } },
+    // Only pre-migration attachments have an on-disk copy; for everything
+    // else `filepath` is just the original filename, not a real path.
+    const legacy = await prisma.attachment.findMany({
+      where: { ticket: { userId }, data: null },
       select: { filepath: true },
     });
-    const filepaths = attachments.map((a) => a.filepath);
 
     // DB cascades handle tickets, attachments, ticket_activity, refresh_tokens
     await prisma.user.delete({ where: { id: userId } });
 
-    for (const filepath of filepaths) {
+    for (const { filepath } of legacy) {
       try {
-        fs.unlinkSync(filepath);
+        fs.unlinkSync(legacyUploadPath(filepath));
       } catch {
         /* ignore missing files */
       }

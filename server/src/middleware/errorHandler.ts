@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 
 export class AppError extends Error {
   statusCode: number;
@@ -18,6 +19,16 @@ export function errorHandler(
 
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ error: err.message });
+    return;
+  }
+
+  if (err instanceof multer.MulterError) {
+    const messages: Partial<Record<multer.ErrorCode, string>> = {
+      LIMIT_FILE_SIZE: 'That file is too large',
+      LIMIT_FILE_COUNT: 'Too many files in one upload',
+      LIMIT_UNEXPECTED_FILE: 'Too many files in one upload',
+    };
+    res.status(400).json({ error: messages[err.code] || 'Upload failed' });
     return;
   }
 

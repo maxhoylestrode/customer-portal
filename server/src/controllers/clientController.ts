@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
+import { sendStoredFile, readLegacyFile, mimeFor } from '../utils/files';
 
 // Every field except avatarData (the bytes themselves) — reused everywhere
 // a client record is returned as JSON, so the blob never gets pulled into
@@ -282,7 +283,7 @@ export async function uploadAvatar(req: Request, res: Response, next: NextFuncti
 
     await prisma.client.update({
       where: { id: clientId },
-      data: { avatarData: Buffer.from(req.file.buffer), avatarMimetype: req.file.mimetype, avatarPath: null },
+      data: { avatarData: Buffer.from(req.file.buffer), avatarMimetype: mimeFor(req.file.originalname), avatarPath: null },
     });
 
     res.json({ avatarUrl: `/api/clients/${clientId}/avatar` });
@@ -300,23 +301,10 @@ export async function getAvatar(req: Request, res: Response, next: NextFunction)
     });
     if (!client) return res.status(404).json({ error: 'Client not found' });
 
-    if (client.avatarData) {
-      res.setHeader('Content-Type', client.avatarMimetype || 'image/png');
-      res.setHeader('Cache-Control', 'private, max-age=3600');
-      res.send(Buffer.from(client.avatarData));
-      return;
-    }
-
-    // Fall back to disk for a pre-migration avatar
-    if (client.avatarPath) {
-      const abs = path.resolve(client.avatarPath);
-      if (fs.existsSync(abs)) {
-        res.sendFile(abs);
-        return;
-      }
-    }
-
-    res.status(404).json({ error: 'No avatar set' });
+    // Falls back to disk for a pre-migration avatar
+    const data = client.avatarData ?? (client.avatarPath ? readLegacyFile(client.avatarPath) : null);
+    if (!data) return res.status(404).json({ error: 'No avatar set' });
+    sendStoredFile(res, { data, filename: client.avatarPath, mimetype: client.avatarMimetype });
   } catch (err) {
     next(err);
   }

@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import helmet from 'helmet';
 
 import authRoutes from './routes/auth';
 import ticketRoutes from './routes/tickets';
@@ -25,6 +26,19 @@ import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// CapRover's nginx sits in front of the app; trusting exactly that many hops
+// gives rate limiting the real client IP without letting clients spoof it.
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      // Leave http alone so a local/LAN test of the image still works; CapRover forces HTTPS
+      upgradeInsecureRequests: null,
+    },
+  },
+}));
 
 // Middleware
 app.use(cors({

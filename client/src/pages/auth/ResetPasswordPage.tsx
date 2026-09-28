@@ -72,6 +72,9 @@ export default function ResetPasswordPage() {
                 {errors.root && (
                   <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
                     {errors.root.message}
+                    {errors.root.message?.toLowerCase().includes('expired') && (
+                      <> {' '}<Link to="/forgot-password" className="font-medium underline">Send a new link</Link></>
+                    )}
                   </div>
                 )}
                 <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5">
