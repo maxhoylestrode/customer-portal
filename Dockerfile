@@ -31,9 +31,10 @@ COPY server/prisma ./prisma
 RUN npx prisma generate
 
 COPY --from=server-build /app/server/dist ./dist
+COPY server/scripts ./scripts
 COPY --from=client-build /app/client/dist /app/client/dist
 
 ENV NODE_ENV=production
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "node scripts/prepare-db.js && npx prisma migrate deploy && node dist/index.js"]

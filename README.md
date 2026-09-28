@@ -39,13 +39,12 @@ cd server && npx prisma migrate deploy
 ```
 
 **Existing database (upgrading from before the staff-portal merge):**
-Your tables already match the `20260924000000_baseline` migration, so mark it applied instead of running it, then deploy the rest:
+`npm start` (and the Docker image) handle this automatically: `scripts/prepare-db.js` spots a database that has the old tables but no migration history, marks the baseline as applied, and `prisma migrate deploy` then adds the new tables and tidies the old column rules. It never drops your existing `users`/`tickets`/`attachments`/`ticket_activity`/`refresh_tokens` data. To do it by hand:
 ```bash
 cd server
-npx prisma migrate resolve --applied 20260924000000_baseline
+node scripts/prepare-db.js
 npx prisma migrate deploy
 ```
-This only adds new tables (clients, projects, files, notes, meetings, etc.) — it never touches or drops your existing `users`/`tickets`/`attachments`/`ticket_activity`/`refresh_tokens` data.
 
 ### 3. Environment variables
 
@@ -163,9 +162,9 @@ apex-portal/
 │   └── schema.sql        # PostgreSQL schema (reference only — Prisma migrations are the source of truth)
 ├── Dockerfile            # Multi-stage build: client + server → single runtime image
 ├── captain-definition    # Points CapRover at the Dockerfile
-├── MIGRATION.md          # Moving the live database + attachments from the old server to CapRover
+├── DEPLOY.md             # Step-by-step CapRover setup, data migration from the old server, and cutover
 ├── backup/               # Nightly encrypted off-site Postgres backup (separate CapRover app)
-├── BACKUPS.md            # How to deploy, monitor and restore those backups
+├── BACKUPS.md            # How the backups work and how to restore one
 └── .env.example          # Environment variable template
 ```
 
@@ -180,22 +179,16 @@ stages, then runs them as a single container: Express serves `/api/*` and
 also serves the built client with an SPA fallback, so there's nothing else
 to host separately.
 
-```bash
-caprover deploy
-```
-
-Set `NODE_ENV=production`, `PORT`/Container HTTP Port to `3001`, and the
-rest of the variables from `.env.example` in the CapRover app's config. The
-container runs `prisma migrate deploy` automatically on every start, so
-schema changes ship with the code — no manual migration step.
+On every start the container runs `scripts/prepare-db.js` (which recognises
+a database restored from the old pre-Prisma server and records its baseline)
+and then `prisma migrate deploy`, so schema changes ship with the code and
+there's no manual migration step.
 
 **Backups:** every file lives in the database, so set up the nightly
 off-site backup in [`BACKUPS.md`](./BACKUPS.md) before real clients use it.
 
-**Migrating an existing production database and its ticket attachments from
-another server?** See [`MIGRATION.md`](./MIGRATION.md) — it covers the
-`pg_dump`/`pg_restore` steps and a one-time script to bring old on-disk
-attachments into the database so nothing is lost on cutover.
+**Setting it up on CapRover, including moving the live data off the old
+server:** follow [`DEPLOY.md`](./DEPLOY.md) top to bottom.
 
 ---
 
