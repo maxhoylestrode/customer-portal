@@ -1,41 +1,29 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { Request } from 'express';
-
-const UPLOAD_DIR = path.join(__dirname, '../../uploads');
-
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, UPLOAD_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${ext}`);
-  },
-});
+import { decodeUploadName } from '../utils/files';
+import { AppError } from './errorHandler';
 
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  file.originalname = decodeUploadName(file.originalname);
   const allowed = [
     'image/jpeg', 'image/png', 'image/webp', 'image/gif',
     'application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain',
   ];
-  if (allowed.includes(file.mimetype)) {
+  // Desktop browsers often send HEIC with a blank or generic type, so trust the extension for those
+  const heic = ['.heic', '.heif'].includes(path.extname(file.originalname).toLowerCase());
+  if (allowed.includes(file.mimetype) || file.mimetype.startsWith('image/hei') || heic) {
     cb(null, true);
   } else {
-    cb(new Error('File type not allowed. Accepted: images, PDF, DOCX, TXT'));
+    cb(new AppError('File type not allowed. Accepted: photos and images (including iPhone HEIC), PDF, DOCX, TXT', 400));
   }
 };
 
+// In-memory: bytes go straight into Postgres (req.file.buffer), never to disk.
 export const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB

@@ -1,5 +1,15 @@
 import { transporter, FROM, CLIENT_URL, ADMIN_EMAIL } from '../config/mailer';
 
+// Names, titles, notes and messages are user-supplied; never let them inject markup
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const brandedEmail = (title: string, bodyHtml: string): string => `
 <!DOCTYPE html>
 <html>
@@ -41,9 +51,9 @@ export async function sendNewTicketNotification(
 ) {
   const html = brandedEmail(
     'New Maintenance Ticket Submitted',
-    `<p style="color:#4A4A4A;line-height:1.6;">A new support ticket has been submitted by <strong>${clientName}</strong> (${clientEmail}).</p>
+    `<p style="color:#4A4A4A;line-height:1.6;">A new support ticket has been submitted by <strong>${escapeHtml(clientName)}</strong> (${escapeHtml(clientEmail)}).</p>
     <table style="width:100%;margin:16px 0;background:#f4f8fb;border-radius:6px;padding:16px;border-left:4px solid #0D3040;">
-      <tr><td style="color:#4A4A4A;"><strong>Ticket #${ticketId}:</strong> ${ticketTitle}</td></tr>
+      <tr><td style="color:#4A4A4A;"><strong>Ticket #${ticketId}:</strong> ${escapeHtml(ticketTitle)}</td></tr>
     </table>
     <a href="${CLIENT_URL}/admin/tickets/${ticketId}" style="display:inline-block;background:#0D3040;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px;">View Ticket</a>`
   );
@@ -99,24 +109,24 @@ export async function sendTicketStatusUpdate(
     ? `<tr>
         <td style="color:#4A4A4A;padding-top:8px;border-top:1px solid #e2e8f0;">
           <strong>Notes from Apex Studio:</strong><br>
-          <span style="white-space:pre-wrap;">${adminNotes}</span>
+          <span style="white-space:pre-wrap;">${escapeHtml(adminNotes)}</span>
         </td>
       </tr>`
     : '';
 
   const html = brandedEmail(
     'Your Ticket Has Been Updated',
-    `<p style="color:#4A4A4A;line-height:1.6;">Hi ${clientName},</p>
+    `<p style="color:#4A4A4A;line-height:1.6;">Hi ${escapeHtml(clientName)},</p>
     <p style="color:#4A4A4A;line-height:1.6;">Your maintenance ticket has been updated by our team. Here is a summary of the current details:</p>
     <table style="width:100%;margin:16px 0;background:#f4f8fb;border-radius:6px;padding:16px;border-left:4px solid ${statusColor};">
-      <tr><td style="color:#4A4A4A;padding-bottom:10px;font-size:15px;"><strong>Ticket #${ticketId}:</strong> ${ticketTitle}</td></tr>
+      <tr><td style="color:#4A4A4A;padding-bottom:10px;font-size:15px;"><strong>Ticket #${ticketId}:</strong> ${escapeHtml(ticketTitle)}</td></tr>
       <tr>
         <td style="padding-bottom:8px;">
-          <span style="background:${statusColor};color:#ffffff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;">${statusLabel}</span>
+          <span style="background:${statusColor};color:#ffffff;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;">${escapeHtml(statusLabel)}</span>
         </td>
       </tr>
-      <tr><td style="color:#4A4A4A;padding-bottom:6px;"><strong>Priority:</strong> ${priorityLabels[priority] || priority}</td></tr>
-      <tr><td style="color:#4A4A4A;padding-bottom:6px;"><strong>Scope:</strong> ${scopeLabels[scopeFlag] || scopeFlag}</td></tr>
+      <tr><td style="color:#4A4A4A;padding-bottom:6px;"><strong>Priority:</strong> ${escapeHtml(priorityLabels[priority] || priority)}</td></tr>
+      <tr><td style="color:#4A4A4A;padding-bottom:6px;"><strong>Scope:</strong> ${escapeHtml(scopeLabels[scopeFlag] || scopeFlag)}</td></tr>
       ${notesRow}
     </table>
     <a href="${CLIENT_URL}/tickets/${ticketId}" style="display:inline-block;background:#0D3040;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px;">View Ticket</a>`
@@ -126,6 +136,33 @@ export async function sendTicketStatusUpdate(
     from: FROM,
     to,
     subject: `Ticket #${ticketId} Updated — ${statusLabel}`,
+    html,
+  });
+}
+
+export async function sendNewTicketMessage(
+  to: string,
+  recipientName: string,
+  senderName: string,
+  ticketId: number,
+  ticketTitle: string,
+  message: string,
+  viewUrl: string
+) {
+  const html = brandedEmail(
+    'New Message on Your Ticket',
+    `<p style="color:#4A4A4A;line-height:1.6;">Hi ${escapeHtml(recipientName)},</p>
+    <p style="color:#4A4A4A;line-height:1.6;"><strong>${escapeHtml(senderName)}</strong> sent a new message on ticket <strong>#${ticketId}: ${escapeHtml(ticketTitle)}</strong>:</p>
+    <table style="width:100%;margin:16px 0;background:#f4f8fb;border-radius:6px;padding:16px;border-left:4px solid #0D3040;">
+      <tr><td style="color:#4A4A4A;white-space:pre-wrap;line-height:1.6;">${escapeHtml(message)}</td></tr>
+    </table>
+    <a href="${viewUrl}" style="display:inline-block;background:#0D3040;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px;">Reply to this message</a>`
+  );
+
+  await transporter.sendMail({
+    from: FROM,
+    to,
+    subject: `New message on Ticket #${ticketId}`,
     html,
   });
 }
@@ -152,7 +189,7 @@ export async function sendPasswordResetEmail(to: string, clientName: string, res
   const link = `${CLIENT_URL}/reset-password/${resetToken}`;
   const html = brandedEmail(
     'Password Reset Request',
-    `<p style="color:#4A4A4A;line-height:1.6;">Hi ${clientName},</p>
+    `<p style="color:#4A4A4A;line-height:1.6;">Hi ${escapeHtml(clientName)},</p>
     <p style="color:#4A4A4A;line-height:1.6;">A password reset has been requested for your Apex Portal account. Click the button below to set a new password. This link will expire in <strong>1 hour</strong>.</p>
     <a href="${link}" style="display:inline-block;background:#0D3040;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:8px;">Reset My Password</a>
     <p style="margin-top:24px;color:#888;font-size:13px;">If you did not request this, you can safely ignore this email.</p>

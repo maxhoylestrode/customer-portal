@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { PageHeader } from '../../components/Layout';
 import Spinner from '../../components/Spinner';
 import { useToast } from '../../components/Toast';
+import NotificationsCard from '../../components/NotificationsCard';
 import { User, KeyRound } from 'lucide-react';
 
 const profileSchema = z.object({
@@ -219,7 +220,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Sidebar */}
-        <div>
+        <div className="space-y-6">
           <div className="card px-5 py-5">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-14 h-14 rounded-full bg-[#0D3040] flex items-center justify-center text-white text-xl font-bold">
@@ -235,6 +236,8 @@ export default function ProfilePage() {
               <p className="text-sm text-gray-600">{user.company_name}</p>
             )}
           </div>
+
+          <NotificationsCard description="Get notified when we reply to your tickets or update their status — even when the portal isn't open." />
         </div>
       </div>
     </div>

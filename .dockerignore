@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+client/build
+**/.env
+**/.env.*
+!**/.env.example
+**/uploads
+**/*.log
+.git
+.gitignore
+README.md
+DEPLOY.md
+BACKUPS.md
+database

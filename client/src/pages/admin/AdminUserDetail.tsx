@@ -12,7 +12,7 @@ import { PageSpinner } from '../../components/Spinner';
 import Spinner from '../../components/Spinner';
 import { useToast } from '../../components/Toast';
 import { formatDate } from '../../utils/formatters';
-import { Globe, Mail, Phone, Building, FileText, KeyRound, Power, AlertCircle, Ticket, Trash2 } from 'lucide-react';
+import { Globe, Mail, Phone, Building, FileText, KeyRound, Power, AlertCircle, Ticket, Trash2, LayoutGrid } from 'lucide-react';
 import Modal from '../../components/Modal';
 
 const schema = z.object({
@@ -97,7 +97,7 @@ export default function AdminUserDetail() {
   if (isLoading) return <PageSpinner />;
   if (!userData) return <div className="text-center py-16"><p className="text-gray-500">Client not found</p></div>;
 
-  const { user, stats } = userData.data;
+  const { user, stats, crm_client: crmClient } = userData.data;
   const tickets = ticketsData?.data.tickets || [];
 
   function startEdit() {
@@ -228,6 +228,23 @@ export default function AdminUserDetail() {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* CRM link */}
+          {crmClient && (
+            <div className="card px-5 py-5">
+              <h3 className="font-semibold text-[#0D3040] text-sm mb-3 flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4" />
+                Staff CRM Record
+              </h3>
+              <Link
+                to={`/staff/clients/${crmClient.id}`}
+                className="block rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#1A5276] hover:bg-gray-50"
+              >
+                {crmClient.company || crmClient.name}
+                <span className="block text-xs text-gray-400 mt-0.5">View client profile, projects & files →</span>
+              </Link>
+            </div>
+          )}
+
           {/* Stats */}
           <div className="card px-5 py-5">
             <h3 className="font-semibold text-[#0D3040] text-sm mb-4">Ticket Summary</h3>

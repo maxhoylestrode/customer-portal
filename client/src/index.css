@@ -32,3 +32,29 @@
     @apply text-red-500 text-xs mt-1;
   }
 }
+
+/* FullCalendar dark theme overrides — scoped to the staff-portal calendar pages */
+.fc {
+  --fc-border-color: #374151;
+  --fc-button-bg-color: #4f46e5;
+  --fc-button-border-color: #4338ca;
+  --fc-button-hover-bg-color: #4338ca;
+  --fc-button-hover-border-color: #3730a3;
+  --fc-button-active-bg-color: #3730a3;
+  --fc-today-bg-color: rgba(99, 102, 241, 0.08);
+  --fc-event-bg-color: #6366f1;
+  --fc-event-border-color: #4f46e5;
+  --fc-page-bg-color: #111827;
+  --fc-neutral-bg-color: #1f2937;
+  --fc-list-event-hover-bg-color: #1f2937;
+  color: #e5e7eb;
+}
+
+.fc .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day-number {
+  color: #d1d5db;
+}
+
+.fc .fc-scrollgrid {
+  border-color: #374151;
+}

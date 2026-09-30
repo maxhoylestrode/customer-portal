@@ -19,6 +19,9 @@ export const authApi = {
 
   getMe: () => api.get<{ user: User }>('/auth/me'),
 
+  forgotPassword: (email: string) =>
+    api.post<{ ok: boolean; message: string }>('/auth/forgot-password', { email }),
+
   resetPasswordConfirm: (token: string, password: string) =>
     api.post('/auth/reset-password/confirm', { token, password }),
 

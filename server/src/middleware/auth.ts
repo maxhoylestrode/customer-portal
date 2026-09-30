@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { JwtPayload } from '../types';
+import { JwtPayload, Role } from '../types';
+import prisma from '../config/prisma';
 
-export function authenticate(req: Request, res: Response, next: NextFunction): void {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -10,12 +11,35 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
+  let payload: JwtPayload;
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    req.user = payload;
-    next();
+    payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
+    return;
+  }
+
+  // Check the account on every request so deactivation and role changes
+  // apply immediately rather than when the access token expires.
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { role: true, isActive: true, sessionsRevokedAt: true },
+    });
+    if (!user || !user.isActive) {
+      res.status(401).json({ error: 'Account is no longer active' });
+      return;
+    }
+    // JWT iat has 1s resolution, so compare whole seconds: the fresh token a
+    // password change issues in the same second as the revocation stays valid.
+    if (user.sessionsRevokedAt && (payload.iat ?? 0) < Math.floor(user.sessionsRevokedAt.getTime() / 1000)) {
+      res.status(401).json({ error: 'Session has been signed out' });
+      return;
+    }
+    req.user = { userId: payload.userId, role: user.role as Role };
+    next();
+  } catch (err) {
+    next(err);
   }
 }
 
@@ -25,4 +49,34 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
   next();
+}
+
+// Any internal team role (i.e. not a client) — admin, staff, or sales
+export function requireStaff(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user || req.user.role === 'client') {
+    res.status(403).json({ error: 'Staff access required' });
+    return;
+  }
+  next();
+}
+
+export function requireRole(...roles: Role[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      res.status(403).json({ error: 'You do not have access to this resource' });
+      return;
+    }
+    next();
+  };
+}
+
+// Block specific role(s) — e.g. denyRole('sales') to keep sales out of a resource
+export function denyRole(...roles: Role[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || roles.includes(req.user.role)) {
+      res.status(403).json({ error: 'Access restricted for your role' });
+      return;
+    }
+    next();
+  };
 }

@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/Layout';
 import StatusBadge from '../../components/StatusBadge';
 import PriorityBadge from '../../components/PriorityBadge';
 import { PageSpinner } from '../../components/Spinner';
+import TicketChat from '../../components/TicketChat';
 import { formatDate, formatDateTime, getActivityLabel, getScopeLabel } from '../../utils/formatters';
 import { Paperclip, Clock, ExternalLink, FileText } from 'lucide-react';
 
@@ -64,7 +65,7 @@ export default function TicketDetailPage() {
                 {attachments.map((att) => (
                   <li key={att.id}>
                     <a
-                      href={`/api/uploads/${att.filepath}`}
+                      href={`/api/tickets/${att.ticket_id}/attachments/${att.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
@@ -78,6 +79,9 @@ export default function TicketDetailPage() {
               </ul>
             </div>
           )}
+
+          {/* Chat */}
+          <TicketChat ticketId={ticket.id} />
 
           {/* Activity timeline */}
           <div className="card px-5 py-5">

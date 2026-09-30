@@ -1,3 +1,5 @@
+export type Role = 'client' | 'admin' | 'staff' | 'sales';
+
 export interface User {
   id: number;
   name: string;
@@ -6,7 +8,7 @@ export interface User {
   company_name?: string;
   website_url?: string;
   client_notes?: string;
-  role: 'client' | 'admin';
+  role: Role;
   is_active: boolean;
   has_pending_invite?: boolean;
   has_pending_reset?: boolean;
@@ -37,6 +39,16 @@ export interface Attachment {
   filename: string;
   filepath: string;
   uploaded_at: string;
+}
+
+export interface TicketMessage {
+  id: number;
+  ticket_id: number;
+  user_id: number;
+  message: string;
+  created_at: string;
+  author_name: string;
+  author_role: Role;
 }
 
 export interface TicketActivity {

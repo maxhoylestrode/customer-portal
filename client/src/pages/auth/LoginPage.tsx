@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { authApi } from '../../api/auth';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../components/Toast';
 import Spinner from '../../components/Spinner';
+import { defaultRouteForRole } from '../../router';
 
 const schema = z.object({
   email: z.string().email('Enter a valid email address'),
@@ -29,7 +30,7 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(data.email, data.password);
       setUser(res.data.user);
-      navigate(res.data.user.role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+      navigate(defaultRouteForRole(res.data.user.role), { replace: true });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Login failed';
       setError('root', { message: msg });
@@ -54,7 +55,7 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="label">Email address</label>
-              <input type="email" className="input" autoComplete="email" {...register('email')} />
+              <input type="email" className="input" autoComplete="email" autoCapitalize="none" {...register('email')} />
               {errors.email && <p className="error-text">{errors.email.message}</p>}
             </div>
 
@@ -76,8 +77,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-6">
-            Forgotten your password? Contact <span className="text-[#0D3040] font-medium">Apex Studio Codes</span> to reset it.
+          <p className="text-center text-sm mt-6">
+            <Link to="/forgot-password" className="text-[#0D3040] font-medium hover:underline">Forgotten your password?</Link>
           </p>
         </div>
       </div>
