@@ -43,16 +43,3 @@ export function getScopeLabel(scope: string): string {
   };
   return labels[scope] || scope;
 }
-
-export function getActivityLabel(action: string): string {
-  const labels: Record<string, string> = {
-    ticket_created: 'Ticket submitted',
-    status_changed: 'Status updated',
-    scope_updated: 'Scope updated',
-    priority_changed: 'Priority changed',
-    note_added: 'Notes updated',
-    attachment_uploaded: 'File uploaded',
-    attachment_deleted: 'File removed',
-  };
-  return labels[action] || action;
-}

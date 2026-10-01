@@ -11,21 +11,11 @@ import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
 import TicketChat from '../../components/TicketChat';
 import PillSelect, { STATUS_OPTIONS, SCOPE_OPTIONS, PRIORITY_OPTIONS } from '../../components/PillSelect';
-import { formatDate, formatDateTime, getActivityLabel, getScopeLabel } from '../../utils/formatters';
+import { formatDate, getScopeLabel } from '../../utils/formatters';
 import {
-  Paperclip, Trash2, ExternalLink, Clock, FileText, X,
+  Paperclip, Trash2, ExternalLink, FileText, X,
   Send, User, AlertCircle, CheckCircle2, Tag, ArrowRightLeft,
 } from 'lucide-react';
-
-const activityDotColor: Record<string, string> = {
-  ticket_created: 'bg-blue-500',
-  status_changed: 'bg-indigo-500',
-  scope_updated: 'bg-amber-500',
-  priority_changed: 'bg-orange-400',
-  note_added: 'bg-gray-400',
-  attachment_uploaded: 'bg-teal-500',
-  attachment_deleted: 'bg-red-400',
-};
 
 interface FormState {
   status: string;
@@ -90,7 +80,7 @@ export default function AdminTicketDetail() {
   if (isLoading || !form) return <PageSpinner />;
   if (!data) return <div className="text-center py-16"><p className="text-gray-500">Ticket not found</p></div>;
 
-  const { ticket, attachments, activity } = data.data;
+  const { ticket, attachments } = data.data;
   const notes = notesValue !== null ? notesValue : (ticket.admin_notes || '');
 
   // Compute pending changes
@@ -216,42 +206,6 @@ export default function AdminTicketDetail() {
 
           {/* Chat */}
           <TicketChat ticketId={ticket.id} />
-
-          {/* Activity log */}
-          <div className="card px-5 py-5">
-            <h3 className="font-semibold text-[#0D3040] mb-5 text-sm flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Activity Log
-            </h3>
-            <div className="relative pl-1">
-              {activity.length > 1 && (
-                <div className="absolute left-[5px] top-2 bottom-2 w-px bg-gray-200" />
-              )}
-              <ul className="space-y-4">
-                {activity.map((event) => {
-                  const dotColor = activityDotColor[event.action] || 'bg-gray-400';
-                  return (
-                    <li key={event.id} className="flex gap-3 relative">
-                      <div
-                        className={`w-[11px] h-[11px] rounded-full ${dotColor} mt-[3px] shrink-0 z-10 ring-2 ring-white`}
-                      />
-                      <div>
-                        <p className="text-sm text-gray-700 leading-snug">
-                          <span className="font-medium">{getActivityLabel(event.action)}</span>
-                          {event.detail && (
-                            <span className="text-gray-500"> — {event.detail}</span>
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {event.user_name || 'System'} · {formatDateTime(event.created_at)}
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
         </div>
 
         {/* ── Sidebar ── */}

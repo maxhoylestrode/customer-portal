@@ -7,8 +7,8 @@ import StatusBadge from '../../components/StatusBadge';
 import PriorityBadge from '../../components/PriorityBadge';
 import { PageSpinner } from '../../components/Spinner';
 import TicketChat from '../../components/TicketChat';
-import { formatDate, formatDateTime, getActivityLabel, getScopeLabel } from '../../utils/formatters';
-import { Paperclip, Clock, ExternalLink, FileText } from 'lucide-react';
+import { formatDate, getScopeLabel } from '../../utils/formatters';
+import { Paperclip, ExternalLink, FileText } from 'lucide-react';
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +28,7 @@ export default function TicketDetailPage() {
     );
   }
 
-  const { ticket, attachments, activity } = data.data;
+  const { ticket, attachments } = data.data;
 
   return (
     <div>
@@ -82,30 +82,6 @@ export default function TicketDetailPage() {
 
           {/* Chat */}
           <TicketChat ticketId={ticket.id} />
-
-          {/* Activity timeline */}
-          <div className="card px-5 py-5">
-            <h3 className="font-semibold text-[#0D3040] mb-4 text-sm flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Activity
-            </h3>
-            <ul className="space-y-3">
-              {activity.map((event) => (
-                <li key={event.id} className="flex gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#1A5276] mt-1.5 shrink-0" />
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      <span className="font-medium">{getActivityLabel(event.action)}</span>
-                      {event.detail && <span className="text-gray-500"> — {event.detail}</span>}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {event.user_name || 'System'} · {formatDateTime(event.created_at)}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
         {/* Sidebar */}

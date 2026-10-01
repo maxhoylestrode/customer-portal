@@ -166,12 +166,6 @@ export async function getTicket(req: Request, res: Response, next: NextFunction)
       orderBy: { uploadedAt: 'desc' },
     });
 
-    const activity = await prisma.ticketActivity.findMany({
-      where: { ticketId },
-      orderBy: { createdAt: 'asc' },
-      include: { user: { select: { name: true, role: true } } },
-    });
-
     res.json({
       ticket: serializeTicket(ticket),
       attachments: attachments.map((a) => ({
@@ -180,16 +174,6 @@ export async function getTicket(req: Request, res: Response, next: NextFunction)
         filename: a.filename,
         filepath: a.filepath,
         uploaded_at: a.uploadedAt,
-      })),
-      activity: activity.map((a) => ({
-        id: a.id,
-        ticket_id: a.ticketId,
-        user_id: a.userId,
-        action: a.action,
-        detail: a.detail,
-        created_at: a.createdAt,
-        user_name: a.user?.name,
-        user_role: a.user?.role,
       })),
     });
   } catch (err) {

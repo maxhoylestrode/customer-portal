@@ -51,17 +51,6 @@ export interface TicketMessage {
   author_role: Role;
 }
 
-export interface TicketActivity {
-  id: number;
-  ticket_id: number;
-  user_id?: number;
-  action: string;
-  detail?: string;
-  created_at: string;
-  user_name?: string;
-  user_role?: string;
-}
-
 export interface DashboardStats {
   pending: number;
   in_progress: number;

@@ -1,12 +1,12 @@
 import api from './axios';
-import { Ticket, Attachment, TicketActivity, TicketMessage } from '../types';
+import { Ticket, Attachment, TicketMessage } from '../types';
 
 export const ticketsApi = {
   getAll: (params?: { status?: string; scope_flag?: string; client_id?: number }) =>
     api.get<{ tickets: Ticket[] }>('/tickets', { params }),
 
   getById: (id: number) =>
-    api.get<{ ticket: Ticket; attachments: Attachment[]; activity: TicketActivity[] }>(`/tickets/${id}`),
+    api.get<{ ticket: Ticket; attachments: Attachment[] }>(`/tickets/${id}`),
 
   create: (formData: FormData) =>
     api.post<{ ticket: Ticket }>('/tickets', formData, {
