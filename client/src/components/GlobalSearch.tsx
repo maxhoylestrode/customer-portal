@@ -26,7 +26,7 @@ const GROUP_LABELS: Record<keyof SearchResults, string> = {
   projects: 'Projects',
 };
 
-export default function GlobalSearch({ dark }: { dark?: boolean }) {
+export default function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults>(EMPTY);
@@ -84,11 +84,7 @@ export default function GlobalSearch({ dark }: { dark?: boolean }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-          dark
-            ? 'bg-surface-light text-gray-400 hover:text-gray-200'
-            : 'bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white'
-        }`}
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
       >
         <Search className="w-4 h-4 shrink-0" />
         <span className="flex-1 text-left">Search…</span>

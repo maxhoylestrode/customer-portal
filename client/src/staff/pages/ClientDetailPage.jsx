@@ -58,7 +58,7 @@ export default function ClientDetailPage() {
   if (loading)
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
 
@@ -101,11 +101,11 @@ export default function ClientDetailPage() {
             </label>
           </div>
           <div>
-            <button onClick={() => navigate('/staff/clients')} className="mb-1 text-sm text-gray-500 hover:text-gray-300">
+            <button onClick={() => navigate('/staff/clients')} className="mb-1 text-sm text-gray-500 hover:text-gray-700">
               ← Back to Clients
             </button>
-            <h1 className="text-2xl font-bold">{client.name}</h1>
-            {client.company && <p className="text-gray-400">{client.company}</p>}
+            <h1 className="text-2xl font-bold text-[#0D3040]">{client.name}</h1>
+            {client.company && <p className="text-gray-500">{client.company}</p>}
             {client.avatarUrl && (
               <button
                 onClick={async () => {
@@ -117,7 +117,7 @@ export default function ClientDetailPage() {
                     toast.error('Failed to remove avatar');
                   }
                 }}
-                className="mt-1 text-xs text-gray-500 hover:text-red-400"
+                className="mt-1 text-xs text-gray-500 hover:text-red-600"
               >
                 Remove avatar
               </button>
@@ -125,7 +125,7 @@ export default function ClientDetailPage() {
             {Array.isArray(client.tags) && client.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {client.tags.map((tag) => (
-                  <span key={tag} className="rounded-full bg-brand-600/20 px-2.5 py-0.5 text-xs font-medium text-brand-400">
+                  <span key={tag} className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-600">
                     {tag}
                   </span>
                 ))}
@@ -133,12 +133,12 @@ export default function ClientDetailPage() {
             )}
             {client.salesPerson && (
               <div className="mt-2 flex items-center gap-1.5">
-                <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg className="h-3.5 w-3.5 text-emerald-700" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span className="text-xs text-gray-400">Sales Rep:</span>
-                <span className="rounded-full bg-emerald-600/20 px-2 py-0.5 text-xs font-medium text-emerald-400">{client.salesPerson.name}</span>
-                <span className="text-xs text-gray-600">(10% commission)</span>
+                <span className="text-xs text-gray-500">Sales Rep:</span>
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{client.salesPerson.name}</span>
+                <span className="text-xs text-gray-400">(10% commission)</span>
               </div>
             )}
           </div>
@@ -146,14 +146,14 @@ export default function ClientDetailPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setEditing(true)}
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:bg-surface-lighter"
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           >
             Edit
           </button>
           {currentUser?.role !== 'sales' && (
             <button
               onClick={handleDelete}
-              className="rounded-lg border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30"
+              className="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
             >
               Delete
             </button>
@@ -165,8 +165,8 @@ export default function ClientDetailPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {/* Contact info */}
-          <div className="rounded-xl border border-gray-800 bg-surface p-5">
-            <h2 className="mb-3 text-lg font-semibold">Contact Information</h2>
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h2 className="mb-3 text-lg font-semibold text-[#0D3040]">Contact Information</h2>
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
               <InfoItem label="Email" value={client.email} />
               <InfoItem label="Phone" value={client.phone} />
@@ -176,22 +176,22 @@ export default function ClientDetailPage() {
 
           {/* Notes */}
           {client.notes && (
-            <div className="rounded-xl border border-gray-800 bg-surface p-5">
-              <h2 className="mb-3 text-lg font-semibold">Notes</h2>
-              <p className="whitespace-pre-wrap text-sm text-gray-300">{client.notes}</p>
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h2 className="mb-3 text-lg font-semibold text-[#0D3040]">Notes</h2>
+              <p className="whitespace-pre-wrap text-sm text-gray-700">{client.notes}</p>
             </div>
           )}
 
           {/* Hosting Plan — visible only when "Website Hosting" tag is active */}
           {client.tags?.includes('Website Hosting') && (
-            <div className="rounded-xl border border-brand-700/40 bg-surface p-5">
-              <h2 className="mb-3 text-lg font-semibold text-brand-300">Hosting Plan</h2>
+            <div className="rounded-xl border border-brand-200 bg-white p-5">
+              <h2 className="mb-3 text-lg font-semibold text-brand-600">Hosting Plan</h2>
               {client.hostingTier ? (
                 <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-brand-600/20 px-3 py-1 text-sm font-semibold text-brand-300">
+                  <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-semibold text-brand-600">
                     {client.hostingTier}
                   </span>
-                  <span className="text-sm text-gray-400">— Website Hosting</span>
+                  <span className="text-sm text-gray-500">— Website Hosting</span>
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">No hosting tier set. Edit the client to assign one.</p>
@@ -201,15 +201,15 @@ export default function ClientDetailPage() {
 
           {/* Projects — hidden for sales role */}
           {currentUser?.role !== 'sales' && (
-          <div className="rounded-xl border border-gray-800 bg-surface p-5">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Projects ({client.projects?.length || 0})</h2>
+              <h2 className="text-lg font-semibold text-[#0D3040]">Projects ({client.projects?.length || 0})</h2>
               <button
                 onClick={() => {
                   setEditProject(null);
                   setShowProjectForm(true);
                 }}
-                className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
               >
                 + Add Project
               </button>
@@ -284,7 +284,7 @@ function InfoItem({ label, value, className = '' }) {
   return (
     <div className={className}>
       <dt className="text-gray-500">{label}</dt>
-      <dd className="mt-0.5 text-gray-200">{value || '—'}</dd>
+      <dd className="mt-0.5 text-gray-800">{value || '—'}</dd>
     </div>
   );
 }
@@ -336,25 +336,25 @@ function PortalAccessCard({ client, onUpdate }) {
   };
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-surface p-5">
-      <h2 className="mb-3 text-lg font-semibold">Portal Access</h2>
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <h2 className="mb-3 text-lg font-semibold text-[#0D3040]">Portal Access</h2>
       {client.portalUser ? (
         <div className="space-y-3">
           <div>
-            <p className="text-sm font-medium text-gray-200">{client.portalUser.name}</p>
+            <p className="text-sm font-medium text-gray-800">{client.portalUser.name}</p>
             <p className="text-xs text-gray-500">{client.portalUser.email}</p>
             {!client.portalUser.isActive && (
-              <span className="mt-1 inline-block rounded-full bg-red-600/20 px-2 py-0.5 text-xs text-red-400">Deactivated</span>
+              <span className="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">Deactivated</span>
             )}
           </div>
           {client.portalTicketSummary && (
             <div className="flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-amber-500/10 px-2 py-1 text-amber-400">{client.portalTicketSummary.pending} pending</span>
-              <span className="rounded-full bg-blue-500/10 px-2 py-1 text-blue-400">{client.portalTicketSummary.in_progress} in progress</span>
-              <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-emerald-400">{client.portalTicketSummary.complete} complete</span>
+              <span className="rounded-full bg-amber-50 px-2 py-1 text-amber-700">{client.portalTicketSummary.pending} pending</span>
+              <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-700">{client.portalTicketSummary.in_progress} in progress</span>
+              <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">{client.portalTicketSummary.complete} complete</span>
             </div>
           )}
-          <button onClick={handleUnlink} className="text-xs text-gray-500 hover:text-red-400">
+          <button onClick={handleUnlink} className="text-xs text-gray-500 hover:text-red-600">
             Unlink portal login
           </button>
         </div>
@@ -369,7 +369,7 @@ function PortalAccessCard({ client, onUpdate }) {
               setSearch(e.target.value);
               searchUsers(e.target.value);
             }}
-            className="w-full rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-sm text-gray-100 focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none"
           />
           <div className="max-h-48 space-y-1 overflow-y-auto">
             {searching && <p className="text-xs text-gray-500">Searching…</p>}
@@ -379,24 +379,24 @@ function PortalAccessCard({ client, onUpdate }) {
                 key={c.id}
                 disabled={!!c.linked_client_id}
                 onClick={() => handleLink(c.id)}
-                className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs hover:bg-surface-lighter disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <span>
-                  <span className="block text-gray-200">{c.name}</span>
+                  <span className="block text-gray-800">{c.name}</span>
                   <span className="text-gray-500">{c.email}</span>
                 </span>
-                {c.linked_client_id && <span className="text-gray-600">linked elsewhere</span>}
+                {c.linked_client_id && <span className="text-gray-400">linked elsewhere</span>}
               </button>
             ))}
           </div>
-          <button onClick={() => setLinking(false)} className="text-xs text-gray-500 hover:text-gray-300">
+          <button onClick={() => setLinking(false)} className="text-xs text-gray-500 hover:text-gray-700">
             Cancel
           </button>
         </div>
       ) : (
         <div>
           <p className="mb-2 text-xs text-gray-500">No ticket-portal login linked to this client yet.</p>
-          <button onClick={() => setLinking(true)} className="text-sm text-brand-400 hover:underline">
+          <button onClick={() => setLinking(true)} className="text-sm text-brand-600 hover:underline">
             + Link a portal login
           </button>
         </div>
@@ -407,21 +407,21 @@ function PortalAccessCard({ client, onUpdate }) {
 
 function ProjectCard({ project, onEdit, onDelete }) {
   const statusColor = {
-    active: 'bg-emerald-500/20 text-emerald-400',
-    complete: 'bg-blue-500/20 text-blue-400',
-    'on-hold': 'bg-amber-500/20 text-amber-400',
+    active: 'bg-emerald-100 text-emerald-700',
+    complete: 'bg-blue-100 text-blue-700',
+    'on-hold': 'bg-amber-100 text-amber-700',
   };
 
   return (
-    <div className="rounded-lg border border-gray-800 p-4 transition hover:border-gray-700">
+    <div className="rounded-lg border border-gray-200 p-4 transition hover:border-gray-300">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-medium">{project.name}</h3>
+          <h3 className="font-medium text-[#0D3040]">{project.name}</h3>
           {project.description && (
-            <p className="mt-1 text-sm text-gray-400 line-clamp-2">{project.description}</p>
+            <p className="mt-1 text-sm text-gray-500 line-clamp-2">{project.description}</p>
           )}
         </div>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor[project.status] || 'bg-gray-700 text-gray-400'}`}>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor[project.status] || 'bg-gray-200 text-gray-500'}`}>
           {project.status}
         </span>
       </div>
@@ -430,13 +430,13 @@ function ProjectCard({ project, onEdit, onDelete }) {
         <span>→</span>
         <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Ongoing'}</span>
         {project.milestones?.length > 0 && (
-          <span className="text-brand-400">{project.milestones.length} milestones</span>
+          <span className="text-brand-600">{project.milestones.length} milestones</span>
         )}
       </div>
       {Array.isArray(project.milestones) && project.milestones.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {project.milestones.map((m) => (
-            <span key={m.id} className="rounded bg-surface-lighter px-2 py-0.5 text-xs text-gray-400">
+            <span key={m.id} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
               {m.title} — {new Date(m.date).toLocaleDateString()}
             </span>
           ))}
@@ -446,17 +446,17 @@ function ProjectCard({ project, onEdit, onDelete }) {
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-gray-500">Assigned:</span>
           {project.assignedUsers.map((u) => (
-            <span key={u.id} className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-xs font-medium text-indigo-300">
+            <span key={u.id} className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-600">
               {u.name}
             </span>
           ))}
         </div>
       )}
       <div className="mt-3 flex gap-2">
-        <button onClick={onEdit} className="text-xs text-brand-400 hover:underline">
+        <button onClick={onEdit} className="text-xs text-brand-600 hover:underline">
           Edit
         </button>
-        <button onClick={onDelete} className="text-xs text-red-400 hover:underline">
+        <button onClick={onDelete} className="text-xs text-red-700 hover:underline">
           Delete
         </button>
       </div>
@@ -482,25 +482,25 @@ function FileViewerModal({ file, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 flex flex-col w-full h-full mx-auto my-6 rounded-xl border border-gray-800 bg-gray-950 shadow-2xl overflow-hidden ${image ? 'max-w-4xl' : 'max-w-5xl'}`}>
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800 shrink-0">
+      <div className={`relative z-10 flex flex-col w-full h-full mx-auto my-6 rounded-xl border border-gray-200 bg-gray-50 shadow-2xl overflow-hidden ${image ? 'max-w-4xl' : 'max-w-5xl'}`}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             {image ? (
-              <svg className="h-5 w-5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <svg className="h-5 w-5 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
               </svg>
             ) : (
-              <svg className="h-5 w-5 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 text-red-700 shrink-0" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/>
               </svg>
             )}
-            <span className="text-sm font-medium text-gray-200 truncate">{file.filename}</span>
+            <span className="text-sm font-medium text-gray-800 truncate">{file.filename}</span>
           </div>
           <div className="flex items-center gap-3 shrink-0 ml-4">
-            <a href={`/api/files/${file.id}/download`} className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-surface-lighter">
+            <a href={`/api/files/${file.id}/download`} className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100">
               Download
             </a>
-            <button onClick={onClose} className="rounded-md p-1.5 text-gray-500 hover:bg-surface-lighter hover:text-gray-300" aria-label="Close">
+            <button onClick={onClose} className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700" aria-label="Close">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -508,7 +508,7 @@ function FileViewerModal({ file, onClose }) {
           </div>
         </div>
         {image ? (
-          <div className="flex-1 flex items-center justify-center bg-gray-900 p-4 overflow-auto">
+          <div className="flex-1 flex items-center justify-center bg-white p-4 overflow-auto">
             <img
               src={`/api/files/${file.id}/view`}
               alt={file.filename}
@@ -516,7 +516,7 @@ function FileViewerModal({ file, onClose }) {
             />
           </div>
         ) : (
-          <iframe src={`/api/files/${file.id}/view`} title={file.filename} className="flex-1 w-full border-0 bg-gray-900" />
+          <iframe src={`/api/files/${file.id}/view`} title={file.filename} className="flex-1 w-full border-0 bg-white" />
         )}
       </div>
     </div>
@@ -562,10 +562,10 @@ function FileSection({ clientId, files, onUpdate }) {
 
   return (
     <>
-      <div className="rounded-xl border border-gray-800 bg-surface p-5">
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Files ({files?.length || 0})</h2>
-          <label className="cursor-pointer rounded-lg bg-surface-lighter px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-600">
+          <h2 className="text-lg font-semibold text-[#0D3040]">Files ({files?.length || 0})</h2>
+          <label className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300">
             {uploading ? 'Uploading…' : '+ Upload'}
             <input type="file" className="hidden" accept=".txt,.pdf,.docx,.doc,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif" onChange={handleUpload} disabled={uploading} />
           </label>
@@ -575,14 +575,14 @@ function FileSection({ clientId, files, onUpdate }) {
         ) : (
           <ul className="space-y-2">
             {(files || []).map((f) => (
-              <li key={f.id} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-surface-light">
+              <li key={f.id} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-gray-50">
                 <div className="min-w-0 flex-1 flex items-center gap-2">
                   {isImage(f) ? (
-                    <svg className="h-4 w-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <svg className="h-4 w-4 text-emerald-700 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
                     </svg>
                   ) : isViewable(f) ? (
-                    <svg className="h-4 w-4 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 text-red-700 shrink-0" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/>
                     </svg>
                   ) : (
@@ -591,7 +591,7 @@ function FileSection({ clientId, files, onUpdate }) {
                     </svg>
                   )}
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-gray-200">{f.filename}</p>
+                    <p className="truncate font-medium text-gray-800">{f.filename}</p>
                     <p className="text-xs text-gray-500">{new Date(f.uploadedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
@@ -599,18 +599,18 @@ function FileSection({ clientId, files, onUpdate }) {
                   {isViewable(f) && (
                     <button
                       onClick={() => setPreviewFile(f)}
-                      className="text-xs text-indigo-400 hover:underline"
+                      className="text-xs text-brand-600 hover:underline"
                     >
                       View
                     </button>
                   )}
                   <a
                     href={`/api/files/${f.id}/download`}
-                    className="text-xs text-brand-400 hover:underline"
+                    className="text-xs text-brand-600 hover:underline"
                   >
                     Download
                   </a>
-                  <button onClick={() => handleDelete(f.id)} className="text-xs text-red-400 hover:underline">
+                  <button onClick={() => handleDelete(f.id)} className="text-xs text-red-700 hover:underline">
                     Delete
                   </button>
                 </div>
@@ -684,22 +684,22 @@ function EditClientModal({ open, client, onClose, onSaved }) {
         </div>
         <Input label="Address" value={form.address} onChange={set('address')} />
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-300">Notes</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Notes</label>
           <textarea
             rows={3}
             value={form.notes}
             onChange={set('notes')}
-            className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
           />
         </div>
         <TagCheckboxes selected={form.tags} onToggle={toggleTag} />
         {form.tags.includes('Website Hosting') && (
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-300">Hosting Plan</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Hosting Plan</label>
             <select
               value={form.hostingTier}
               onChange={set('hostingTier')}
-              className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
             >
               <option value="">— Select tier —</option>
               {HOSTING_TIERS.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -707,10 +707,10 @@ function EditClientModal({ open, client, onClose, onSaved }) {
           </div>
         )}
         <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-gray-200">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -798,21 +798,21 @@ function ProjectFormModal({ open, project, clientId, onClose, onSaved }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input label="Project Name *" value={form.name} onChange={set('name')} required />
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-300">Description</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
           <textarea
             rows={3}
             value={form.description}
             onChange={set('description')}
-            className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
           />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-300">Status</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
             <select
               value={form.status}
               onChange={set('status')}
-              className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
             >
               <option value="active">Active</option>
               <option value="on-hold">On Hold</option>
@@ -826,7 +826,7 @@ function ProjectFormModal({ open, project, clientId, onClose, onSaved }) {
         {/* Assigned Users */}
         {Array.isArray(users) && users.length > 0 && (
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-300">Assigned Staff</label>
+            <label className="mb-2 block text-sm font-medium text-gray-700">Assigned Staff</label>
             <div className="flex flex-wrap gap-2">
               {users.map((u) => {
                 const active = form.assignedUserIds.includes(u.id);
@@ -837,8 +837,8 @@ function ProjectFormModal({ open, project, clientId, onClose, onSaved }) {
                     onClick={() => toggleUser(u.id)}
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                       active
-                        ? 'border-indigo-500 bg-indigo-600/30 text-indigo-300'
-                        : 'border-gray-700 bg-surface-light text-gray-400 hover:border-gray-500 hover:text-gray-200'
+                        ? 'border-brand-600 bg-brand-100 text-brand-600'
+                        : 'border-gray-300 bg-gray-50 text-gray-500 hover:border-gray-400 hover:text-gray-800'
                     }`}
                   >
                     {active && <span className="mr-1">✓</span>}
@@ -854,8 +854,8 @@ function ProjectFormModal({ open, project, clientId, onClose, onSaved }) {
         {/* Milestones */}
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-300">Milestones</label>
-            <button type="button" onClick={addMilestone} className="text-xs text-brand-400 hover:underline">
+            <label className="text-sm font-medium text-gray-700">Milestones</label>
+            <button type="button" onClick={addMilestone} className="text-xs text-brand-600 hover:underline">
               + Add Milestone
             </button>
           </div>
@@ -865,15 +865,15 @@ function ProjectFormModal({ open, project, clientId, onClose, onSaved }) {
                 placeholder="Title"
                 value={m.title}
                 onChange={(e) => setMilestone(i, 'title', e.target.value)}
-                className="flex-1 rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+                className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none"
               />
               <input
                 type="date"
                 value={m.date}
                 onChange={(e) => setMilestone(i, 'date', e.target.value)}
-                className="rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-sm text-gray-100 focus:border-brand-500 focus:outline-none"
+                className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none"
               />
-              <button type="button" onClick={() => removeMilestone(i)} className="text-red-400 hover:text-red-300 px-1">
+              <button type="button" onClick={() => removeMilestone(i)} className="text-red-700 hover:text-red-600 px-1">
                 ✕
               </button>
             </div>
@@ -881,10 +881,10 @@ function ProjectFormModal({ open, project, clientId, onClose, onSaved }) {
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-gray-200">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
             {saving ? 'Saving…' : isEdit ? 'Update Project' : 'Create Project'}
           </button>
         </div>
@@ -960,12 +960,12 @@ function NotesSection({ clientId }) {
   };
 
   return (
-    <div className="rounded-xl border border-gray-800 bg-surface p-5">
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Notes ({notes.length})</h2>
+        <h2 className="text-lg font-semibold text-[#0D3040]">Notes ({notes.length})</h2>
         <button
           onClick={openNew}
-          className="rounded-lg bg-surface-lighter px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-600"
+          className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300"
         >
           + Add Note
         </button>
@@ -973,12 +973,12 @@ function NotesSection({ clientId }) {
 
       {/* Compose / edit form */}
       {showForm && (
-        <form onSubmit={handleSave} className="mb-4 rounded-lg border border-brand-600/30 bg-surface-light p-3 space-y-2">
+        <form onSubmit={handleSave} className="mb-4 rounded-lg border border-brand-200 bg-gray-50 p-3 space-y-2">
           <input
             placeholder="Title (optional)"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full rounded-md border border-gray-700 bg-surface px-3 py-1.5 text-sm text-gray-100 placeholder-gray-500 focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none"
           />
           <textarea
             rows={4}
@@ -986,16 +986,16 @@ function NotesSection({ clientId }) {
             value={form.content}
             onChange={(e) => setForm({ ...form, content: e.target.value })}
             required
-            className="w-full rounded-md border border-gray-700 bg-surface px-3 py-1.5 text-sm text-gray-100 placeholder-gray-500 focus:border-brand-500 focus:outline-none resize-y"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none resize-y"
           />
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={closeForm} className="rounded px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200">
+            <button type="button" onClick={closeForm} className="rounded px-3 py-1.5 text-xs text-gray-500 hover:text-gray-800">
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+              className="rounded-md bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-50"
             >
               {saving ? 'Saving…' : editNote ? 'Update Note' : 'Save Note'}
             </button>
@@ -1008,29 +1008,29 @@ function NotesSection({ clientId }) {
       ) : (
         <ul className="space-y-3">
           {notes.map((note) => (
-            <li key={note.id} className="rounded-lg border border-gray-800 p-3 hover:border-gray-700 transition">
+            <li key={note.id} className="rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition">
               {note.title && (
-                <p className="mb-1 text-sm font-semibold text-gray-200">{note.title}</p>
+                <p className="mb-1 text-sm font-semibold text-gray-800">{note.title}</p>
               )}
-              <p className="whitespace-pre-wrap text-sm text-gray-300">{note.content}</p>
+              <p className="whitespace-pre-wrap text-sm text-gray-700">{note.content}</p>
               <div className="mt-2 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">
                   {note.author && (
                     <>
-                      <span className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-indigo-300">{note.author.name}</span>
+                      <span className="rounded-full bg-brand-100 px-2 py-0.5 text-brand-600">{note.author.name}</span>
                       <span>·</span>
                     </>
                   )}
                   <span>{new Date(note.createdAt).toLocaleString()}</span>
                   {note.updatedAt !== note.createdAt && (
-                    <span className="text-gray-600">(edited)</span>
+                    <span className="text-gray-400">(edited)</span>
                   )}
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <button onClick={() => openEdit(note)} className="text-xs text-brand-400 hover:underline">
+                  <button onClick={() => openEdit(note)} className="text-xs text-brand-600 hover:underline">
                     Edit
                   </button>
-                  <button onClick={() => handleDelete(note.id)} className="text-xs text-red-400 hover:underline">
+                  <button onClick={() => handleDelete(note.id)} className="text-xs text-red-700 hover:underline">
                     Delete
                   </button>
                 </div>
@@ -1046,10 +1046,10 @@ function NotesSection({ clientId }) {
 function Input({ label, ...props }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-gray-300">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
       <input
         {...props}
-        className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
       />
     </div>
   );

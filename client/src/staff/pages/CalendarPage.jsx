@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 
 // Deterministic colour palette for clients / users
 const PALETTE = [
-  '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#3b82f6',
+  '#1A5276', '#10b981', '#f59e0b', '#ef4444', '#3b82f6',
   '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
 ];
 const colorFromId = (id) => PALETTE[(id ?? 0) % PALETTE.length];
@@ -140,15 +140,15 @@ export default function CalendarPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold">Calendar</h1>
+        <h1 className="text-2xl font-bold text-[#0D3040]">Calendar</h1>
         <div className="flex flex-wrap items-center gap-2">
           {currentUser && (
             <button
               onClick={filterUser === String(currentUser.id) ? clearFilters : setMyProjects}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition ${
                 filterUser === String(currentUser.id)
-                  ? 'border-brand-500 bg-brand-600/20 text-brand-300'
-                  : 'border-gray-700 bg-surface-light text-gray-400 hover:text-gray-200'
+                  ? 'border-brand-600 bg-brand-100 text-brand-600'
+                  : 'border-gray-300 bg-gray-50 text-gray-500 hover:text-gray-800'
               }`}
             >
               {filterUser === String(currentUser.id) ? '✓ My Projects' : 'My Projects'}
@@ -157,7 +157,7 @@ export default function CalendarPage() {
           <select
             value={filterClient}
             onChange={(e) => setFilterClient(e.target.value)}
-            className="rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-xs text-gray-100 focus:border-brand-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-brand-700 focus:outline-none"
           >
             <option value="">All Clients</option>
             {clients.map((c) => (
@@ -167,7 +167,7 @@ export default function CalendarPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-xs text-gray-100 focus:border-brand-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-brand-700 focus:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="active">Active</option>
@@ -177,7 +177,7 @@ export default function CalendarPage() {
           <select
             value={filterUser}
             onChange={(e) => setFilterUser(e.target.value)}
-            className="rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-xs text-gray-100 focus:border-brand-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-brand-700 focus:outline-none"
           >
             <option value="">All Staff</option>
             {users.map((u) => (
@@ -187,7 +187,7 @@ export default function CalendarPage() {
           <select
             value={colorMode}
             onChange={(e) => setColorMode(e.target.value)}
-            className="rounded-lg border border-gray-700 bg-surface-light px-3 py-2 text-xs text-gray-100 focus:border-brand-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-brand-700 focus:outline-none"
           >
             <option value="status">Colour: Status</option>
             <option value="client">Colour: Client</option>
@@ -196,7 +196,7 @@ export default function CalendarPage() {
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="rounded-lg border border-gray-700 px-3 py-2 text-xs text-gray-400 hover:text-gray-200"
+              className="rounded-lg border border-gray-300 px-3 py-2 text-xs text-gray-500 hover:text-gray-800"
             >
               Clear
             </button>
@@ -206,27 +206,27 @@ export default function CalendarPage() {
 
       {/* Colour legend */}
       {showLegend && legendItems.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-gray-800 bg-surface px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5">
           <span className="mr-1 text-xs font-medium uppercase tracking-wide text-gray-500">Legend</span>
           {legendItems.map((item) => (
             <div key={item.label} className="flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: item.color }} />
-              <span className="text-xs text-gray-300">{item.label}</span>
+              <span className="text-xs text-gray-700">{item.label}</span>
             </div>
           ))}
-          <button onClick={() => setShowLegend(false)} className="ml-auto text-xs text-gray-600 hover:text-gray-400">
+          <button onClick={() => setShowLegend(false)} className="ml-auto text-xs text-gray-400 hover:text-gray-500">
             Hide
           </button>
         </div>
       )}
       {!showLegend && (
-        <button onClick={() => setShowLegend(true)} className="text-xs text-gray-500 hover:text-gray-300">
+        <button onClick={() => setShowLegend(true)} className="text-xs text-gray-500 hover:text-gray-700">
           Show legend
         </button>
       )}
 
       {/* Calendar */}
-      <div className="rounded-xl border border-gray-800 bg-surface p-4">
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
         <FullCalendar
           ref={calRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -253,11 +253,11 @@ export default function CalendarPage() {
           <div className="space-y-3 text-sm">
             <div>
               <span className="text-gray-500">Project:</span>{' '}
-              <span className="font-medium text-gray-100">{selected.name}</span>
+              <span className="font-medium text-gray-900">{selected.name}</span>
             </div>
             <div>
               <span className="text-gray-500">Client:</span>{' '}
-              <span className="font-medium text-gray-100">{selected.client?.name}</span>
+              <span className="font-medium text-gray-900">{selected.client?.name}</span>
               {selected.client?.company && (
                 <span className="ml-1 text-gray-500">({selected.client.company})</span>
               )}
@@ -269,17 +269,17 @@ export default function CalendarPage() {
             {selected.description && (
               <div>
                 <span className="text-gray-500">Description:</span>
-                <p className="mt-1 text-gray-300">{selected.description}</p>
+                <p className="mt-1 text-gray-700">{selected.description}</p>
               </div>
             )}
             <div className="flex gap-6">
               <div>
                 <span className="text-gray-500">Start:</span>{' '}
-                <span className="text-gray-200">{new Date(selected.startDate).toLocaleDateString()}</span>
+                <span className="text-gray-800">{new Date(selected.startDate).toLocaleDateString()}</span>
               </div>
               <div>
                 <span className="text-gray-500">End:</span>{' '}
-                <span className="text-gray-200">
+                <span className="text-gray-800">
                   {selected.endDate ? new Date(selected.endDate).toLocaleDateString() : 'Ongoing'}
                 </span>
               </div>
@@ -305,8 +305,8 @@ export default function CalendarPage() {
                 <span className="text-gray-500">Milestones:</span>
                 <ul className="mt-1 space-y-1">
                   {selected.milestones.map((m) => (
-                    <li key={m.id} className="flex items-center gap-2 text-gray-300">
-                      <span className="text-amber-400">⬥</span>
+                    <li key={m.id} className="flex items-center gap-2 text-gray-700">
+                      <span className="text-amber-700">⬥</span>
                       {m.title}
                       <span className="text-gray-500">—</span>
                       {new Date(m.date).toLocaleDateString()}
@@ -324,12 +324,12 @@ export default function CalendarPage() {
 
 function StatusBadge({ status }) {
   const styles = {
-    active:    'bg-emerald-500/20 text-emerald-400',
-    complete:  'bg-blue-500/20 text-blue-400',
-    'on-hold': 'bg-amber-500/20 text-amber-400',
+    active:    'bg-emerald-100 text-emerald-700',
+    complete:  'bg-blue-100 text-blue-700',
+    'on-hold': 'bg-amber-100 text-amber-700',
   };
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-700 text-gray-400'}`}>
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-200 text-gray-500'}`}>
       {status}
     </span>
   );

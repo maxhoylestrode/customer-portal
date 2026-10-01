@@ -58,7 +58,7 @@ export default function App() {
     <AuthContext.Provider value={{ user, isLoading, setUser }}>
       <PortalProvider>
         <ToastProvider>
-          <Toaster position="top-right" toastOptions={{ style: { background: '#1f2937', color: '#f3f4f6' } }} />
+          <Toaster position="top-right" toastOptions={{ style: { background: '#ffffff', color: '#374151', border: '1px solid #e5e7eb' } }} />
           <BrowserRouter>
             <Routes>
               {/* Public routes */}

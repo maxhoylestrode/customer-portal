@@ -1,24 +1,30 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 
-export default function DashboardPage() {
+// Standalone for staff/sales. Admins get it embedded in the admin dashboard
+// (alongside the ticket stats) so there's only one dashboard to check.
+export default function DashboardPage({ embedded = false }) {
   const { user } = useAuth();
   const isSales = user?.role === 'sales';
+  const redirectAdmin = !embedded && user?.role === 'admin';
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (redirectAdmin) return;
     api.get('/dashboard/stats')
       .then((r) => { setStats(r.data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
+  if (redirectAdmin) return <Navigate to="/admin" replace />;
+
   if (loading)
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
 
@@ -35,16 +41,20 @@ export default function DashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
-            {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </p>
-        </div>
+        {embedded ? (
+          <h2 className="text-lg font-semibold text-[#0D3040]">Clients &amp; projects</h2>
+        ) : (
+          <div>
+            <h1 className="text-2xl font-bold text-[#0D3040]">Dashboard</h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+        )}
         <div className="flex gap-3">
           <Link
             to="/staff/clients"
-            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
           >
             + Add Client
           </Link>
@@ -75,33 +85,33 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
         {/* Monthly clients bar chart — spans 2 cols */}
-        <div className="lg:col-span-2 rounded-xl border border-gray-800 bg-surface p-5">
-          <h2 className="mb-4 text-base font-semibold">New Clients — Last 6 Months</h2>
+        <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5">
+          <h2 className="mb-4 text-base font-semibold text-[#0D3040]">New Clients — Last 6 Months</h2>
           <BarChart data={stats.monthlyClients || []} />
         </div>
 
         {/* Project status / Sales commission side panel */}
-        <div className="rounded-xl border border-gray-800 bg-surface p-5">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
           {isSales ? (
             <>
-              <h2 className="mb-4 text-base font-semibold">My Referred Clients</h2>
+              <h2 className="mb-4 text-base font-semibold text-[#0D3040]">My Referred Clients</h2>
               {(!stats.myReferredClients || stats.myReferredClients.length === 0) ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <PeopleIcon className="mb-2 h-10 w-10 text-gray-700" />
                   <p className="text-sm text-gray-500">No referred clients yet.</p>
-                  <Link to="/staff/clients" className="mt-2 text-sm text-brand-400 hover:underline">Add your first client →</Link>
+                  <Link to="/staff/clients" className="mt-2 text-sm text-brand-600 hover:underline">Add your first client →</Link>
                 </div>
               ) : (
                 <ul className="space-y-2">
                   {stats.myReferredClients.slice(0, 8).map((c) => (
                     <li key={c.id}>
                       <Link to={`/staff/clients/${c.id}`}
-                        className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-surface-light">
+                        className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-gray-50">
                         <div>
-                          <p className="text-sm font-medium text-gray-200">{c.name}</p>
+                          <p className="text-sm font-medium text-gray-800">{c.name}</p>
                           <p className="text-xs text-gray-500">{c.company || '—'}</p>
                         </div>
-                        <span className="rounded-full bg-emerald-600/20 px-2 py-0.5 text-xs text-emerald-400">10%</span>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">10%</span>
                       </Link>
                     </li>
                   ))}
@@ -110,7 +120,7 @@ export default function DashboardPage() {
             </>
           ) : (
             <>
-              <h2 className="mb-4 text-base font-semibold">Project Status</h2>
+              <h2 className="mb-4 text-base font-semibold text-[#0D3040]">Project Status</h2>
               {projectTotal === 0 ? (
                 <p className="text-sm text-gray-500 py-4 text-center">No projects yet.</p>
               ) : (
@@ -132,9 +142,9 @@ export default function DashboardPage() {
                       <div key={label} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
-                          <span className="text-gray-400">{label}</span>
+                          <span className="text-gray-500">{label}</span>
                         </div>
-                        <span className="font-medium text-gray-200">{value}</span>
+                        <span className="font-medium text-gray-800">{value}</span>
                       </div>
                     ))}
                   </div>
@@ -148,10 +158,10 @@ export default function DashboardPage() {
       {/* ── Lower row ── */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent Clients */}
-        <div className="rounded-xl border border-gray-800 bg-surface p-5">
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold">Recent Clients</h2>
-            <Link to="/staff/clients" className="text-xs text-brand-400 hover:underline">View all →</Link>
+            <h2 className="text-base font-semibold text-[#0D3040]">Recent Clients</h2>
+            <Link to="/staff/clients" className="text-xs text-brand-600 hover:underline">View all →</Link>
           </div>
           {stats.recentClients.length === 0 ? (
             <p className="text-sm text-gray-500">No clients yet.</p>
@@ -160,18 +170,18 @@ export default function DashboardPage() {
               {stats.recentClients.map((c) => (
                 <li key={c.id}>
                   <Link to={`/staff/clients/${c.id}`}
-                    className="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-surface-light">
+                    className="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-gray-50">
                     <div className="flex items-center gap-3">
                       <MiniAvatar name={c.name} id={c.id} />
                       <div>
-                        <p className="text-sm font-medium text-gray-200">{c.name}</p>
+                        <p className="text-sm font-medium text-gray-800">{c.name}</p>
                         <p className="text-xs text-gray-500">{c.company || '—'}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-600">{new Date(c.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</p>
                       {c.salesPerson && (
-                        <span className="rounded-full bg-emerald-600/20 px-1.5 py-0.5 text-xs text-emerald-400">{c.salesPerson.name}</span>
+                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">{c.salesPerson.name}</span>
                       )}
                     </div>
                   </Link>
@@ -183,9 +193,9 @@ export default function DashboardPage() {
 
         {/* Recent Projects or Upcoming Deadlines */}
         {!isSales && (
-          <div className="rounded-xl border border-gray-800 bg-surface p-5">
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold">
+              <h2 className="text-base font-semibold text-[#0D3040]">
                 {stats.upcomingDeadlines?.length > 0 ? 'Upcoming Deadlines' : 'Recent Projects'}
               </h2>
             </div>
@@ -194,14 +204,14 @@ export default function DashboardPage() {
                 {stats.upcomingDeadlines.map((p) => {
                   const daysLeft = Math.ceil((new Date(p.endDate) - new Date()) / (1000 * 60 * 60 * 24));
                   return (
-                    <li key={p.id} className="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-surface-light">
+                    <li key={p.id} className="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-gray-50">
                       <div>
-                        <p className="text-sm font-medium text-gray-200">{p.name}</p>
+                        <p className="text-sm font-medium text-gray-800">{p.name}</p>
                         <p className="text-xs text-gray-500">{p.client?.name}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-amber-400">{new Date(p.endDate).toLocaleDateString()}</p>
-                        <p className={`text-xs ${daysLeft <= 7 ? 'text-red-400' : 'text-gray-500'}`}>
+                        <p className="text-xs text-amber-700">{new Date(p.endDate).toLocaleDateString()}</p>
+                        <p className={`text-xs ${daysLeft <= 7 ? 'text-red-700' : 'text-gray-500'}`}>
                           {daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`}
                         </p>
                       </div>
@@ -214,9 +224,9 @@ export default function DashboardPage() {
                 {stats.recentProjects.map((p) => (
                   <li key={p.id}>
                     <Link to={`/staff/clients/${p.client.id}`}
-                      className="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-surface-light">
+                      className="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-gray-50">
                       <div>
-                        <p className="text-sm font-medium text-gray-200">{p.name}</p>
+                        <p className="text-sm font-medium text-gray-800">{p.name}</p>
                         <p className="text-xs text-gray-500">{p.client.name}</p>
                       </div>
                       <StatusBadge status={p.status} />
@@ -259,7 +269,7 @@ function BarChart({ data }) {
           const val = Math.round(frac * max);
           return (
             <g key={frac}>
-              <line x1={padL} y1={y} x2={padL + totalW} y2={y} stroke="#374151" strokeWidth={1} strokeDasharray="4 3" />
+              <line x1={padL} y1={y} x2={padL + totalW} y2={y} stroke="#e5e7eb" strokeWidth={1} strokeDasharray="4 3" />
               <text x={padL - 6} y={y + 4} textAnchor="end" fill="#6b7280" fontSize={10}>{val}</text>
             </g>
           );
@@ -274,10 +284,10 @@ function BarChart({ data }) {
             <g key={label}>
               {/* Bar */}
               <rect x={x} y={y} width={barW} height={barH}
-                rx={4} fill="#6366f1" opacity={count === 0 ? 0.2 : 0.85} />
+                rx={4} fill="#1A5276" opacity={count === 0 ? 0.2 : 0.85} />
               {/* Count label on top */}
               {count > 0 && (
-                <text x={x + barW / 2} y={y - 5} textAnchor="middle" fill="#a5b4fc" fontSize={11} fontWeight="600">
+                <text x={x + barW / 2} y={y - 5} textAnchor="middle" fill="#0D3040" fontSize={11} fontWeight="600">
                   {count}
                 </text>
               )}
@@ -313,7 +323,7 @@ function DonutChart({ segments, total }) {
   return (
     <div className="flex items-center justify-center">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={cx} cy={cy} r={r} fill="transparent" stroke="#1f2937" strokeWidth={14} />
+        <circle cx={cx} cy={cy} r={r} fill="transparent" stroke="#f3f4f6" strokeWidth={14} />
         {pieces.map(({ label, color, dasharray, offset: strokeOffset }) => (
           <circle
             key={label}
@@ -327,7 +337,7 @@ function DonutChart({ segments, total }) {
             style={{ transition: 'stroke-dasharray 0.4s ease' }}
           />
         ))}
-        <text x={cx} y={cy - 4} textAnchor="middle" fill="#f9fafb" fontSize={16} fontWeight="bold">{total}</text>
+        <text x={cx} y={cy - 4} textAnchor="middle" fill="#0D3040" fontSize={16} fontWeight="bold">{total}</text>
         <text x={cx} y={cy + 10} textAnchor="middle" fill="#6b7280" fontSize={8}>projects</text>
       </svg>
     </div>
@@ -337,16 +347,16 @@ function DonutChart({ segments, total }) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function StatCard({ label, value, color, sub, icon }) {
   const colors = {
-    brand:   'border-brand-600/30   bg-brand-600/10   text-brand-400',
-    emerald: 'border-emerald-600/30 bg-emerald-600/10 text-emerald-400',
-    amber:   'border-amber-600/30   bg-amber-600/10   text-amber-400',
-    blue:    'border-blue-600/30    bg-blue-600/10    text-blue-400',
+    brand:   'border-brand-200   bg-brand-50   text-brand-600',
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    amber:   'border-amber-200   bg-amber-50   text-amber-700',
+    blue:    'border-blue-200    bg-blue-50    text-blue-700',
   };
   return (
     <div className={`rounded-xl border p-5 ${colors[color]}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
           <p className="mt-1 text-3xl font-bold">{value}</p>
           {sub && <p className="mt-1 text-xs text-gray-500">{sub}</p>}
         </div>
@@ -357,7 +367,7 @@ function StatCard({ label, value, color, sub, icon }) {
 }
 
 function MiniAvatar({ name, id }) {
-  const palette = ['bg-violet-600','bg-indigo-600','bg-blue-600','bg-teal-600','bg-emerald-600','bg-amber-600','bg-rose-600'];
+  const palette = ['bg-violet-600','bg-brand-700','bg-blue-600','bg-teal-600','bg-emerald-600','bg-amber-600','bg-rose-600'];
   const bg = palette[(name?.charCodeAt(0) || 0) % palette.length];
   return (
     <div className={`${bg} flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase text-white`}>
@@ -368,12 +378,12 @@ function MiniAvatar({ name, id }) {
 
 function StatusBadge({ status }) {
   const styles = {
-    active:    'bg-emerald-500/20 text-emerald-400',
-    complete:  'bg-blue-500/20    text-blue-400',
-    'on-hold': 'bg-amber-500/20   text-amber-400',
+    active:    'bg-emerald-100 text-emerald-700',
+    complete:  'bg-blue-100    text-blue-700',
+    'on-hold': 'bg-amber-100   text-amber-700',
   };
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-700 text-gray-400'}`}>
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-200 text-gray-500'}`}>
       {status}
     </span>
   );

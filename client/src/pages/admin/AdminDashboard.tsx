@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/Layout';
 import { PageSpinner } from '../../components/Spinner';
 import { formatDateTime, getActivityLabel } from '../../utils/formatters';
 import { Clock, Users, Ticket, CheckCircle, AlertTriangle, BarChart2, TrendingUp } from 'lucide-react';
+import StaffDashboard from '../../staff/pages/DashboardPage';
 
 export default function AdminDashboard() {
   const { data, isLoading } = useQuery({
@@ -28,7 +29,9 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Overview of all maintenance tickets and clients." />
+      <PageHeader title="Dashboard" subtitle="Tickets, clients and projects at a glance." />
+
+      <h2 className="text-lg font-semibold text-[#0D3040] mb-4">Tickets</h2>
 
       {/* Top stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -142,6 +145,10 @@ export default function AdminDashboard() {
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="mt-10">
+        <StaffDashboard embedded />
       </div>
     </div>
   );
