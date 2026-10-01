@@ -94,7 +94,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const ticketNav: NavItem[] = [
     { to: '/admin/tickets', label: 'All Tickets', icon: <Ticket className="w-4 h-4" /> },
-    { to: '/admin/users', label: 'Clients', icon: <Users className="w-4 h-4" /> },
+    { to: '/admin/users', label: 'Portal Logins', icon: <Users className="w-4 h-4" /> },
     { to: '/admin/accounts', label: 'Admin Accounts', icon: <ShieldCheck className="w-4 h-4" /> },
     { to: '/admin/profile', label: 'Profile', icon: <UserCircle className="w-4 h-4" /> },
   ];

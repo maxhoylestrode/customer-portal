@@ -75,8 +75,8 @@ export default function AdminUsersPage() {
   return (
     <div>
       <PageHeader
-        title="Clients"
-        subtitle={`${users.length} client${users.length !== 1 ? 's' : ''}`}
+        title="Portal Logins"
+        subtitle={`${users.length} client login${users.length !== 1 ? 's' : ''}`}
         action={
           <div className="flex gap-2">
             <button onClick={() => setInviteOpen(true)} className="btn-secondary flex items-center gap-2 text-sm">
@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
             </button>
             <button onClick={() => setCreateOpen(true)} className="btn-primary flex items-center gap-2 text-sm">
               <Plus className="w-4 h-4" />
-              Add Client
+              Add Login
             </button>
           </div>
         }
@@ -96,8 +96,8 @@ export default function AdminUsersPage() {
       ) : users.length === 0 ? (
         <div className="card text-center py-16">
           <Users className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 mb-4">No clients yet</p>
-          <button onClick={() => setCreateOpen(true)} className="btn-primary text-sm">Add First Client</button>
+          <p className="text-gray-500 mb-4">No portal logins yet</p>
+          <button onClick={() => setCreateOpen(true)} className="btn-primary text-sm">Add First Login</button>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
       )}
 
       {/* Create Client Modal */}
-      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add New Client" size="lg">
+      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add Portal Login" size="lg">
         <form onSubmit={createForm.handleSubmit((d) => createMutation.mutate(d))} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -117,7 +117,7 @@ export default function AdminUserDetail() {
       <PageHeader
         title={user.company_name || user.name}
         subtitle={user.email}
-        breadcrumb={[{ label: 'Clients', to: '/admin/users' }, { label: user.name, to: `/admin/users/${user.id}` }]}
+        breadcrumb={[{ label: 'Portal Logins', to: '/admin/users' }, { label: user.name, to: `/admin/users/${user.id}` }]}
         action={
           <div className="flex gap-2">
             {!editMode && (
