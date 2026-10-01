@@ -213,12 +213,6 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
       where: { status: 'complete', updatedAt: { gte: startOfMonth } },
     });
 
-    const recentActivityRows = await prisma.ticketActivity.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-      include: { ticket: { select: { title: true } }, user: { select: { name: true } } },
-    });
-
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
@@ -258,16 +252,6 @@ export async function getDashboardStats(req: Request, res: Response, next: NextF
         total,
         total_clients,
       },
-      recentActivity: recentActivityRows.map((a) => ({
-        id: a.id,
-        ticket_id: a.ticketId,
-        user_id: a.userId,
-        action: a.action,
-        detail: a.detail,
-        created_at: a.createdAt,
-        ticket_title: a.ticket.title,
-        user_name: a.user?.name,
-      })),
       monthlyTrend,
       priorityBreakdown,
     });
