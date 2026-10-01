@@ -33,28 +33,28 @@
   }
 }
 
-/* FullCalendar dark theme overrides — scoped to the staff-portal calendar pages */
+/* FullCalendar overrides: the client portal's light navy theme */
 .fc {
-  --fc-border-color: #374151;
-  --fc-button-bg-color: #4f46e5;
-  --fc-button-border-color: #4338ca;
-  --fc-button-hover-bg-color: #4338ca;
-  --fc-button-hover-border-color: #3730a3;
-  --fc-button-active-bg-color: #3730a3;
-  --fc-today-bg-color: rgba(99, 102, 241, 0.08);
-  --fc-event-bg-color: #6366f1;
-  --fc-event-border-color: #4f46e5;
-  --fc-page-bg-color: #111827;
-  --fc-neutral-bg-color: #1f2937;
-  --fc-list-event-hover-bg-color: #1f2937;
-  color: #e5e7eb;
+  --fc-border-color: #e5e7eb;
+  --fc-button-bg-color: #0D3040;
+  --fc-button-border-color: #0D3040;
+  --fc-button-hover-bg-color: #1A5276;
+  --fc-button-hover-border-color: #1A5276;
+  --fc-button-active-bg-color: #1A5276;
+  --fc-today-bg-color: #eef6fb;
+  --fc-event-bg-color: #1A5276;
+  --fc-event-border-color: #0D3040;
+  --fc-page-bg-color: #ffffff;
+  --fc-neutral-bg-color: #f9fafb;
+  --fc-list-event-hover-bg-color: #f3f4f6;
+  color: #374151;
 }
 
 .fc .fc-col-header-cell-cushion,
 .fc .fc-daygrid-day-number {
-  color: #d1d5db;
+  color: #4b5563;
 }
 
 .fc .fc-scrollgrid {
-  border-color: #374151;
+  border-color: #e5e7eb;
 }

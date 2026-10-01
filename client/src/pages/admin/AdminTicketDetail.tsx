@@ -10,6 +10,7 @@ import Spinner from '../../components/Spinner';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
 import TicketChat from '../../components/TicketChat';
+import PillSelect, { STATUS_OPTIONS, SCOPE_OPTIONS, PRIORITY_OPTIONS } from '../../components/PillSelect';
 import { formatDate, formatDateTime, getActivityLabel, getScopeLabel } from '../../utils/formatters';
 import {
   Paperclip, Trash2, ExternalLink, Clock, FileText, X,
@@ -281,54 +282,9 @@ export default function AdminTicketDetail() {
               </div>
             )}
 
-            {/* Status */}
-            <div>
-              <label className="label text-xs">Status</label>
-              <select
-                className={`input text-sm transition-colors ${
-                  form.status !== ticket.status ? 'border-amber-400 bg-amber-50 focus:border-amber-500' : ''
-                }`}
-                value={form.status}
-                onChange={(e) => setField('status', e.target.value)}
-              >
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="complete">Complete</option>
-                <option value="out_of_scope">Out of Scope</option>
-              </select>
-            </div>
-
-            {/* Scope */}
-            <div>
-              <label className="label text-xs">Scope</label>
-              <select
-                className={`input text-sm transition-colors ${
-                  form.scope_flag !== ticket.scope_flag ? 'border-amber-400 bg-amber-50 focus:border-amber-500' : ''
-                }`}
-                value={form.scope_flag}
-                onChange={(e) => setField('scope_flag', e.target.value)}
-              >
-                <option value="unknown">Unknown</option>
-                <option value="in_scope">In Scope</option>
-                <option value="out_of_scope">Out of Scope</option>
-              </select>
-            </div>
-
-            {/* Priority */}
-            <div>
-              <label className="label text-xs">Priority</label>
-              <select
-                className={`input text-sm transition-colors ${
-                  form.priority !== ticket.priority ? 'border-amber-400 bg-amber-50 focus:border-amber-500' : ''
-                }`}
-                value={form.priority}
-                onChange={(e) => setField('priority', e.target.value)}
-              >
-                <option value="low">Low</option>
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-              </select>
-            </div>
+            <PillSelect label="Status" options={STATUS_OPTIONS} value={form.status} original={ticket.status} onChange={(v) => setField('status', v)} />
+            <PillSelect label="Scope" options={SCOPE_OPTIONS} value={form.scope_flag} original={ticket.scope_flag} onChange={(v) => setField('scope_flag', v)} />
+            <PillSelect label="Priority" options={PRIORITY_OPTIONS} value={form.priority} original={ticket.priority} onChange={(v) => setField('priority', v)} />
 
             {/* Submit */}
             <div className="pt-1 border-t border-gray-100 space-y-2">

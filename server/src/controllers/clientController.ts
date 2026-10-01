@@ -129,6 +129,7 @@ export async function listPortalUsers(req: Request, res: Response, next: NextFun
         id: true,
         name: true,
         email: true,
+        phone: true,
         companyName: true,
         clientProfile: { select: { id: true, name: true } },
       },
@@ -141,6 +142,7 @@ export async function listPortalUsers(req: Request, res: Response, next: NextFun
         id: u.id,
         name: u.name,
         email: u.email,
+        phone: u.phone,
         company_name: u.companyName,
         linked_client_id: u.clientProfile?.id ?? null,
       }))
@@ -197,8 +199,21 @@ export async function linkPortalUser(req: Request, res: Response, next: NextFunc
 
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
-    const { name, company, email, phone, address, notes, tags, hostingTier, salesPersonId } = req.body;
+    const { name, company, email, phone, address, notes, tags, hostingTier, salesPersonId, portalUserId } = req.body;
     if (!name) return res.status(400).json({ error: 'Client name is required' });
+
+    // Optionally link to an existing ticket-portal login in the same step
+    let resolvedPortalUserId: number | null = null;
+    if (portalUserId != null && portalUserId !== '') {
+      resolvedPortalUserId = parseInt(portalUserId, 10);
+      const portalUser = await prisma.user.findUnique({ where: { id: resolvedPortalUserId } });
+      if (!portalUser) return res.status(404).json({ error: 'Portal user not found' });
+      if (portalUser.role !== 'client') return res.status(400).json({ error: 'Only client-role portal accounts can be linked' });
+      const existingLink = await prisma.client.findUnique({ where: { portalUserId: resolvedPortalUserId } });
+      if (existingLink) {
+        return res.status(409).json({ error: `That portal account is already linked to "${existingLink.name}"` });
+      }
+    }
 
     // If the creator is a sales user and no salesPersonId is given, auto-assign them
     const resolvedSalesPersonId =
@@ -219,6 +234,7 @@ export async function create(req: Request, res: Response, next: NextFunction) {
         tags: tags || [],
         hostingTier: hostingTier || null,
         salesPersonId: resolvedSalesPersonId,
+        portalUserId: resolvedPortalUserId,
       },
       select: CLIENT_SAFE_SELECT,
     });

@@ -79,28 +79,28 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <h1 className="text-2xl font-bold text-[#0D3040]">Settings</h1>
 
       {/* Portal Logo */}
-      <div className="rounded-xl border border-gray-800 bg-surface p-6">
-        <h2 className="mb-4 text-lg font-semibold">Portal Logo</h2>
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="mb-4 text-lg font-semibold text-[#0D3040]">Portal Logo</h2>
         <div className="flex items-center gap-6">
           {/* Preview */}
-          <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-gray-700 bg-surface-light">
+          <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-gray-300 bg-gray-50">
             {logoUrl ? (
               <img src={logoUrl} alt="Portal logo" className="h-16 w-16 rounded-lg object-contain" />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-600 text-xl font-bold">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-700 text-xl font-bold text-white">
                 A
               </div>
             )}
           </div>
           <div className="space-y-2">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500">
               Shown in the sidebar. Accepted: .jpg, .png, .webp, .svg, .gif (max 5 MB).
             </p>
             <div className="flex gap-3">
-              <label className="cursor-pointer rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+              <label className="cursor-pointer rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
                 {uploadingLogo ? 'Uploading…' : logoUrl ? 'Replace Logo' : 'Upload Logo'}
                 <input
                   type="file"
@@ -113,7 +113,7 @@ export default function SettingsPage() {
               {logoUrl && (
                 <button
                   onClick={handleLogoRemove}
-                  className="rounded-lg border border-red-800 px-4 py-2 text-sm text-red-400 hover:bg-red-900/30"
+                  className="rounded-lg border border-red-200 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
                 >
                   Remove
                 </button>
@@ -124,21 +124,21 @@ export default function SettingsPage() {
       </div>
 
       {/* Current user card */}
-      <div className="rounded-xl border border-gray-800 bg-surface p-6">
-        <h2 className="mb-4 text-lg font-semibold">Your Profile</h2>
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="mb-4 text-lg font-semibold text-[#0D3040]">Your Profile</h2>
         <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-gray-500">Name</dt>
-            <dd className="mt-0.5 text-gray-200">{user?.name}</dd>
+            <dd className="mt-0.5 text-gray-800">{user?.name}</dd>
           </div>
           <div>
             <dt className="text-gray-500">Email</dt>
-            <dd className="mt-0.5 text-gray-200">{user?.email}</dd>
+            <dd className="mt-0.5 text-gray-800">{user?.email}</dd>
           </div>
           <div>
             <dt className="text-gray-500">Role</dt>
             <dd className="mt-0.5">
-              <span className="rounded-full bg-brand-600/20 px-2.5 py-0.5 text-xs font-medium text-brand-400">
+              <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-600">
                 {user?.role}
               </span>
             </dd>
@@ -148,15 +148,15 @@ export default function SettingsPage() {
 
       {/* Admin: User Management */}
       {user?.role === 'admin' && (
-        <div className="rounded-xl border border-gray-800 bg-surface p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">User Management</h2>
+              <h2 className="text-lg font-semibold text-[#0D3040]">User Management</h2>
               <p className="mt-1 text-sm text-gray-500">Manage all staff accounts</p>
             </div>
             <button
               onClick={() => setShowAddUser(true)}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
             >
               + Add User
             </button>
@@ -170,7 +170,7 @@ export default function SettingsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-700 text-left text-gray-400">
+                  <tr className="border-b border-gray-300 text-left text-gray-500">
                     <th className="pb-2 pr-4 font-medium">Name</th>
                     <th className="pb-2 pr-4 font-medium">Email</th>
                     <th className="pb-2 pr-4 font-medium">Role</th>
@@ -182,28 +182,28 @@ export default function SettingsPage() {
                   {users.map((u) => (
                     <tr
                       key={u.id}
-                      className="border-b border-gray-800 last:border-0"
+                      className="border-b border-gray-200 last:border-0"
                     >
-                      <td className="py-3 pr-4 text-gray-200">
+                      <td className="py-3 pr-4 text-gray-800">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600/30 text-xs font-bold text-brand-400">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600">
                             {u.name.charAt(0).toUpperCase()}
                           </div>
                           {u.name}
                           {u.id === user.id && (
-                            <span className="rounded-full bg-gray-700 px-2 py-0.5 text-xs text-gray-400">You</span>
+                            <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-500">You</span>
                           )}
                         </div>
                       </td>
-                      <td className="py-3 pr-4 text-gray-400">{u.email}</td>
+                      <td className="py-3 pr-4 text-gray-500">{u.email}</td>
                       <td className="py-3 pr-4">
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             u.role === 'admin'
-                              ? 'bg-yellow-600/20 text-yellow-400'
+                              ? 'bg-yellow-100 text-yellow-700'
                               : u.role === 'sales'
-                              ? 'bg-emerald-600/20 text-emerald-400'
-                              : 'bg-brand-600/20 text-brand-400'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-brand-100 text-brand-600'
                           }`}
                         >
                           {u.role}
@@ -216,14 +216,14 @@ export default function SettingsPage() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => openEdit(u)}
-                            className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-brand-500 hover:text-brand-400"
+                            className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:border-brand-600 hover:text-brand-700"
                           >
                             Edit
                           </button>
                           {u.id !== user.id && (
                             <button
                               onClick={() => handleDeleteUser(u)}
-                              className="rounded-lg border border-red-800 px-3 py-1.5 text-xs text-red-400 hover:bg-red-900/30"
+                              className="rounded-lg border border-red-200 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
                             >
                               Delete
                             </button>
@@ -240,9 +240,9 @@ export default function SettingsPage() {
       )}
 
       {/* About */}
-      <div className="rounded-xl border border-gray-800 bg-surface p-6">
-        <h2 className="mb-2 text-lg font-semibold">About</h2>
-        <p className="text-sm text-gray-400">
+      <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <h2 className="mb-2 text-lg font-semibold text-[#0D3040]">About</h2>
+        <p className="text-sm text-gray-500">
           Apex Studio Codes Staff Portal v1.0.0
           <br />
           Built with React, Express, PostgreSQL &amp; Prisma.
@@ -296,11 +296,11 @@ function AddUserModal({ open, onClose, onCreated }) {
         <Input label="Email" type="email" value={form.email} onChange={set('email')} required />
         <Input label="Password" type="password" value={form.password} onChange={set('password')} required />
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-300">Role</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Role</label>
           <select
             value={form.role}
             onChange={set('role')}
-            className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
           >
             <option value="staff">Staff</option>
             <option value="sales">Sales</option>
@@ -308,10 +308,10 @@ function AddUserModal({ open, onClose, onCreated }) {
           </select>
         </div>
         <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-gray-200">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
             {saving ? 'Creating…' : 'Create User'}
           </button>
         </div>
@@ -359,12 +359,12 @@ function EditUserModal({ open, user: target, currentUserId, onClose, onSaved }) 
         <Input label="Name" value={form.name} onChange={set('name')} required />
         <Input label="Email" type="email" value={form.email} onChange={set('email')} required />
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-300">Role</label>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Role</label>
           <select
             value={form.role}
             onChange={set('role')}
             disabled={isSelf}
-            className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="staff">Staff</option>
             <option value="sales">Sales</option>
@@ -380,10 +380,10 @@ function EditUserModal({ open, user: target, currentUserId, onClose, onSaved }) 
           placeholder="••••••••"
         />
         <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-400 hover:text-gray-200">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50">
+          <button type="submit" disabled={saving} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -396,10 +396,10 @@ function EditUserModal({ open, user: target, currentUserId, onClose, onSaved }) 
 function Input({ label, ...props }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-gray-300">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
       <input
         {...props}
-        className="w-full rounded-lg border border-gray-700 bg-surface-light px-4 py-2 text-sm text-gray-100 placeholder-gray-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface Props {
@@ -23,7 +24,8 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
   const widths = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl' };
 
-  return (
+  // Rendered into <body> so surrounding page layout can't offset the backdrop
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className={`relative bg-white rounded-xl shadow-xl w-full ${widths[size]} max-h-[90vh] overflow-y-auto`}>
@@ -35,6 +37,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
         </div>
         <div className="p-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
