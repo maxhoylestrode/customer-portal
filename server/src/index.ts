@@ -93,6 +93,12 @@ if (process.env.NODE_ENV === 'production') {
   }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();
+    // A missing file (e.g. an old build's /assets/index-abc.css) is a 404, not
+    // the app page served as text/html
+    if (path.extname(req.path)) {
+      res.status(404).end();
+      return;
+    }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(clientDist, 'index.html'));
   });

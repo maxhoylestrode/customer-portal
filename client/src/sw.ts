@@ -1,5 +1,7 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
+import { NetworkFirst } from 'workbox-strategies';
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -7,7 +9,15 @@ declare let self: ServiceWorkerGlobalScope;
 // manifest — every /api/* request in particular — is never intercepted
 // here, so it just goes straight to the network as normal. This app's
 // data (tickets, CRM, chat) must never be served stale from cache.
+// Page loads go to the network first; the cached copy is only an offline
+// fallback. Serving index.html from the precache meant the first open after a
+// deploy ran the previous build's JS against the new API (and asked for CSS
+// the server no longer has), which showed a white screen until a refresh.
+// Registered before the precache route so it wins for navigations.
+registerRoute(new NavigationRoute(new NetworkFirst({ cacheName: 'pages', networkTimeoutSeconds: 4 })));
+
 precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches();
 
 self.addEventListener('install', () => {
   self.skipWaiting();
