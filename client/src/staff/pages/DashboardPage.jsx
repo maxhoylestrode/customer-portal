@@ -1,403 +1,244 @@
-import { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+// NOTE: "Project" in the database/API is shown to users as a "Task".
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import TaskFormModal from '../components/tasks/TaskFormModal';
+import { Avatar } from '../components/tasks/AssigneeAvatars';
+import SectionCard, { EmptyLine } from '../components/dashboard/SectionCard';
+import KpiTile from '../components/dashboard/KpiTile';
+import AttentionPanel from '../components/dashboard/AttentionPanel';
+import TaskListMini from '../components/dashboard/TaskListMini';
+import ComingUpList from '../components/dashboard/ComingUpList';
+import StackedBar from '../components/dashboard/StackedBar';
+import WorkloadBars from '../components/dashboard/WorkloadBars';
+import MonthBars from '../components/dashboard/MonthBars';
+import DashboardSkeleton from '../components/dashboard/DashboardSkeleton';
+import { STATUSES, statusOf } from '../constants/tasks';
 
-// Standalone for staff/sales. Admins get it embedded in the admin dashboard
-// (alongside the ticket stats) so there's only one dashboard to check.
-export default function DashboardPage({ embedded = false }) {
+const TICKET_SEGMENTS = {
+  pending: { label: 'Pending', color: '#f59e0b' },
+  in_progress: { label: 'In Progress', color: '#3b82f6' },
+  complete: { label: 'Complete', color: '#10b981' },
+  out_of_scope: { label: 'Out of Scope', color: '#9ca3af' },
+};
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+
+// The one dashboard for admin, staff and sales. The server only sends the
+// sections a role may see, so a `null` section is simply not drawn.
+export default function DashboardPage() {
   const { user } = useAuth();
-  const isSales = user?.role === 'sales';
-  const redirectAdmin = !embedded && user?.role === 'admin';
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [showTaskForm, setShowTaskForm] = useState(false);
 
-  useEffect(() => {
-    if (redirectAdmin) return;
-    api.get('/dashboard/stats')
-      .then((r) => { setStats(r.data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['dashboard-overview'],
+    queryFn: () => api.get('/dashboard/overview').then((r) => r.data),
+    refetchOnWindowFocus: true,
+    staleTime: 60_000,
+  });
 
-  if (redirectAdmin) return <Navigate to="/admin" replace />;
+  if (isLoading) return <DashboardSkeleton />;
 
-  if (loading)
+  if (isError || !data) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+      <div className="flex h-64 flex-col items-center justify-center gap-3">
+        <p className="text-gray-500">Could not load the dashboard.</p>
+        <button onClick={() => refetch()} className="btn-secondary text-sm">
+          Try again
+        </button>
       </div>
     );
+  }
 
-  if (!stats)
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-gray-500">Could not load dashboard data. Please refresh.</p>
-      </div>
-    );
-
-  const projectTotal = (stats.activeProjects || 0) + (stats.completeProjects || 0) + (stats.onHoldProjects || 0);
+  const isSales = data.role === 'sales';
+  const firstName = (data.userName || user?.name || '').split(' ')[0];
+  const dateLine = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        {embedded ? (
-          <h2 className="text-lg font-semibold text-[#0D3040]">Clients &amp; projects</h2>
-        ) : (
-          <div>
-            <h1 className="text-2xl font-bold text-[#0D3040]">Dashboard</h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
-        )}
-        <div className="flex gap-3">
-          <Link
-            to="/staff/clients"
-            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
-          >
-            + Add Client
+    <div className="space-y-6">
+      {/* Greeting + quick actions */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-brand-700">
+            {greeting()}
+            {firstName ? `, ${firstName}` : ''}
+          </h1>
+          <p className="mt-0.5 text-sm text-gray-500">{dateLine}</p>
+        </div>
+        <div className="flex gap-2">
+          {!isSales && (
+            <button onClick={() => setShowTaskForm(true)} className="btn-primary inline-flex items-center gap-1.5 text-sm">
+              <Plus className="h-4 w-4" /> New task
+            </button>
+          )}
+          <Link to="/staff/clients" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
+            <Plus className="h-4 w-4" /> Add client
           </Link>
         </div>
       </div>
 
-      {/* ── Stats grid ── */}
-      {isSales ? (
-        // Sales view: personal stats
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-          <StatCard label="My Referred Clients" value={stats.estimatedCommission ?? 0} color="emerald"
-            sub="clients you introduced" icon={<PeopleIcon />} />
-          <StatCard label="Total Clients (Portal)" value={stats.totalClients} color="brand"
-            sub="all clients in the system" icon={<ClientIcon />} />
-          <StatCard label="Commission Rate" value="10%" color="amber"
-            sub="per referred client deal" icon={<CommissionIcon />} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-          <StatCard label="Total Clients" value={stats.totalClients} color="brand" icon={<ClientIcon />} />
-          <StatCard label="Active Projects" value={stats.activeProjects || 0} color="emerald" icon={<ProjectIcon />} />
-          <StatCard label="Completed" value={stats.completeProjects || 0} color="blue" icon={<CheckIcon />} />
-          <StatCard label="Upcoming Deadlines" value={stats.upcomingDeadlines?.length || 0} color="amber" icon={<DeadlineIcon />} />
+      {/* 1. Does anything need me right now? */}
+      {data.attention && <AttentionPanel attention={data.attention} />}
+
+      {/* 2. How are we doing? */}
+      <div className={`grid grid-cols-2 gap-4 ${data.kpis.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
+        {data.kpis.map((k) => (
+          <KpiTile key={k.key} kpi={k} />
+        ))}
+      </div>
+
+      {/* 3 + 4. My tasks and what's coming up */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {data.myTasks && (
+          <SectionCard
+            title={`My tasks${data.myTasksTotal ? ` (${data.myTasksTotal})` : ''}`}
+            linkTo="/staff/tasks?mine=1"
+          >
+            {data.myTasks.length === 0 ? (
+              <EmptyLine>No tasks assigned to you</EmptyLine>
+            ) : (
+              <TaskListMini tasks={data.myTasks} />
+            )}
+          </SectionCard>
+        )}
+
+        <SectionCard
+          title="Coming up (next 14 days)"
+          className={data.myTasks ? '' : 'lg:col-span-2'}
+          linkTo={isSales ? '/staff/meetings' : '/staff/calendar'}
+          linkLabel={isSales ? 'Meetings' : 'Calendar'}
+        >
+          {data.comingUp.length === 0 ? (
+            <EmptyLine>Nothing due in the next two weeks</EmptyLine>
+          ) : (
+            <ComingUpList items={data.comingUp} />
+          )}
+        </SectionCard>
+      </div>
+
+      {/* Task pipeline */}
+      {data.pipeline && (
+        <SectionCard title="Task pipeline" linkTo="/staff/tasks">
+          <StackedBar
+            emptyLabel="No tasks yet"
+            segments={data.pipeline.map((p) => ({
+              label: statusOf(p.status).label,
+              value: p.count,
+              color: STATUSES.find((s) => s.value === p.status)?.hex,
+            }))}
+          />
+        </SectionCard>
+      )}
+
+      {/* 5. Workload and tickets */}
+      {(data.workload || data.tickets) && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {data.workload && (
+            <SectionCard title="Team workload">
+              {data.workload.length === 0 ? <EmptyLine>No staff yet</EmptyLine> : <WorkloadBars people={data.workload} />}
+            </SectionCard>
+          )}
+
+          {data.tickets && (
+            <SectionCard title="Tickets" linkTo="/admin/tickets" linkLabel="All tickets">
+              <StackedBar
+                emptyLabel="No tickets yet"
+                segments={data.tickets.byStatus.map((s) => ({
+                  label: TICKET_SEGMENTS[s.status]?.label ?? s.status,
+                  value: s.count,
+                  color: TICKET_SEGMENTS[s.status]?.color ?? '#9ca3af',
+                }))}
+              />
+              <div className="mt-5">
+                <p className="mb-2 text-xs font-medium text-gray-500">New tickets, last 6 months</p>
+                <MonthBars data={data.tickets.monthly} />
+              </div>
+              {data.tickets.oldestWaiting.length > 0 && (
+                <div className="mt-5 border-t border-gray-100 pt-3">
+                  <p className="mb-1 text-xs font-medium text-gray-500">Waiting longest</p>
+                  <ul className="divide-y divide-gray-50">
+                    {data.tickets.oldestWaiting.map((t) => (
+                      <li key={t.id}>
+                        <Link to={`/admin/tickets/${t.id}`} className="flex items-center justify-between gap-3 py-2 hover:text-brand-600">
+                          <span className="min-w-0 truncate text-sm text-gray-800">
+                            #{t.id} {t.title}
+                            <span className="text-gray-400"> · {t.clientName}</span>
+                          </span>
+                          <span className={`shrink-0 text-xs ${t.daysWaiting >= 7 ? 'font-medium text-red-500' : 'text-gray-500'}`}>
+                            {t.daysWaiting === 0 ? 'today' : `${t.daysWaiting}d`}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </SectionCard>
+          )}
         </div>
       )}
 
-      {/* ── Main grid ── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-
-        {/* Monthly clients bar chart — spans 2 cols */}
-        <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5">
-          <h2 className="mb-4 text-base font-semibold text-[#0D3040]">New Clients — Last 6 Months</h2>
-          <BarChart data={stats.monthlyClients || []} />
-        </div>
-
-        {/* Project status / Sales commission side panel */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          {isSales ? (
-            <>
-              <h2 className="mb-4 text-base font-semibold text-[#0D3040]">My Referred Clients</h2>
-              {(!stats.myReferredClients || stats.myReferredClients.length === 0) ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <PeopleIcon className="mb-2 h-10 w-10 text-gray-700" />
-                  <p className="text-sm text-gray-500">No referred clients yet.</p>
-                  <Link to="/staff/clients" className="mt-2 text-sm text-brand-600 hover:underline">Add your first client →</Link>
-                </div>
-              ) : (
-                <ul className="space-y-2">
-                  {stats.myReferredClients.slice(0, 8).map((c) => (
-                    <li key={c.id}>
-                      <Link to={`/staff/clients/${c.id}`}
-                        className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-gray-50">
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{c.name}</p>
-                          <p className="text-xs text-gray-500">{c.company || '—'}</p>
-                        </div>
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">10%</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
+      {/* Sales: their own referred clients */}
+      {isSales && data.referredClients && (
+        <SectionCard title="My referred clients" linkTo="/staff/clients" linkLabel="Clients">
+          {data.referredClients.length === 0 ? (
+            <EmptyLine>No referred clients yet</EmptyLine>
           ) : (
-            <>
-              <h2 className="mb-4 text-base font-semibold text-[#0D3040]">Project Status</h2>
-              {projectTotal === 0 ? (
-                <p className="text-sm text-gray-500 py-4 text-center">No projects yet.</p>
-              ) : (
-                <div className="space-y-4">
-                  <DonutChart
-                    segments={[
-                      { label: 'Active',   value: stats.activeProjects  || 0, color: '#10b981' },
-                      { label: 'Complete', value: stats.completeProjects || 0, color: '#3b82f6' },
-                      { label: 'On Hold',  value: stats.onHoldProjects  || 0, color: '#f59e0b' },
-                    ]}
-                    total={projectTotal}
-                  />
-                  <div className="space-y-2 pt-2">
-                    {[
-                      { label: 'Active',   value: stats.activeProjects  || 0, color: 'bg-emerald-500' },
-                      { label: 'Complete', value: stats.completeProjects || 0, color: 'bg-blue-500' },
-                      { label: 'On Hold',  value: stats.onHoldProjects  || 0, color: 'bg-amber-500' },
-                    ].map(({ label, value, color }) => (
-                      <div key={label} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
-                          <span className="text-gray-500">{label}</span>
-                        </div>
-                        <span className="font-medium text-gray-800">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── Lower row ── */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Recent Clients */}
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-[#0D3040]">Recent Clients</h2>
-            <Link to="/staff/clients" className="text-xs text-brand-600 hover:underline">View all →</Link>
-          </div>
-          {stats.recentClients.length === 0 ? (
-            <p className="text-sm text-gray-500">No clients yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {stats.recentClients.map((c) => (
+            <ul className="-mx-2 divide-y divide-gray-50">
+              {data.referredClients.slice(0, 8).map((c) => (
                 <li key={c.id}>
-                  <Link to={`/staff/clients/${c.id}`}
-                    className="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <MiniAvatar name={c.name} id={c.id} />
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{c.name}</p>
-                        <p className="text-xs text-gray-500">{c.company || '—'}</p>
-                      </div>
+                  <Link to={`/staff/clients/${c.id}`} className="flex items-center justify-between rounded-lg px-2 py-2.5 hover:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{c.name}</p>
+                      <p className="text-xs text-gray-500">{c.company || '—'}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</p>
-                      {c.salesPerson && (
-                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-700">{c.salesPerson.name}</span>
-                      )}
-                    </div>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">10%</span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </SectionCard>
+      )}
 
-        {/* Recent Projects or Upcoming Deadlines */}
-        {!isSales && (
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-[#0D3040]">
-                {stats.upcomingDeadlines?.length > 0 ? 'Upcoming Deadlines' : 'Recent Projects'}
-              </h2>
-            </div>
-            {stats.upcomingDeadlines?.length > 0 ? (
-              <ul className="space-y-2">
-                {stats.upcomingDeadlines.map((p) => {
-                  const daysLeft = Math.ceil((new Date(p.endDate) - new Date()) / (1000 * 60 * 60 * 24));
-                  return (
-                    <li key={p.id} className="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-gray-50">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{p.name}</p>
-                        <p className="text-xs text-gray-500">{p.client?.name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-amber-700">{new Date(p.endDate).toLocaleDateString()}</p>
-                        <p className={`text-xs ${daysLeft <= 7 ? 'text-red-700' : 'text-gray-500'}`}>
-                          {daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`}
-                        </p>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : stats.recentProjects?.length > 0 ? (
-              <ul className="space-y-2">
-                {stats.recentProjects.map((p) => (
-                  <li key={p.id}>
-                    <Link to={`/staff/clients/${p.client.id}`}
-                      className="flex items-center justify-between rounded-lg px-3 py-2.5 transition hover:bg-gray-50">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{p.name}</p>
-                        <p className="text-xs text-gray-500">{p.client.name}</p>
-                      </div>
-                      <StatusBadge status={p.status} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">No projects yet.</p>
-            )}
-          </div>
+      {/* Recently added clients */}
+      <SectionCard title={isSales ? 'Recently added by you' : 'Recently added clients'} linkTo="/staff/clients">
+        {data.recentClients.length === 0 ? (
+          <EmptyLine>No clients yet</EmptyLine>
+        ) : (
+          <ul className="-mx-2 divide-y divide-gray-50">
+            {data.recentClients.map((c) => (
+              <li key={c.id}>
+                <Link to={`/staff/clients/${c.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-gray-50">
+                  <Avatar user={{ id: c.id, name: c.name }} ring={false} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-800">{c.name}</p>
+                    <p className="truncate text-xs text-gray-500">{c.company || '—'}</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {new Date(c.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
+      </SectionCard>
+
+      <TaskFormModal
+        open={showTaskForm}
+        onClose={() => setShowTaskForm(false)}
+        onSaved={() => {
+          setShowTaskForm(false);
+          refetch();
+        }}
+      />
     </div>
   );
 }
-
-// ── Bar Chart (pure SVG) ───────────────────────────────────────────────────────
-function BarChart({ data }) {
-  if (!data || data.length === 0) return <p className="text-sm text-gray-500 py-8 text-center">No data yet.</p>;
-
-  const max = Math.max(...data.map((d) => d.count), 1);
-  const chartH = 140;
-  const barW   = 32;
-  const gap    = 16;
-  const totalW = data.length * (barW + gap) - gap;
-  const padL   = 28;
-  const padB   = 28;
-
-  return (
-    <div className="overflow-x-auto">
-      <svg
-        width={totalW + padL + 16}
-        height={chartH + padB + 8}
-        className="overflow-visible"
-      >
-        {/* Y-axis guide lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
-          const y = 4 + chartH * (1 - frac);
-          const val = Math.round(frac * max);
-          return (
-            <g key={frac}>
-              <line x1={padL} y1={y} x2={padL + totalW} y2={y} stroke="#e5e7eb" strokeWidth={1} strokeDasharray="4 3" />
-              <text x={padL - 6} y={y + 4} textAnchor="end" fill="#6b7280" fontSize={10}>{val}</text>
-            </g>
-          );
-        })}
-
-        {/* Bars */}
-        {data.map(({ label, count }, i) => {
-          const x   = padL + i * (barW + gap);
-          const barH = Math.max(4, (count / max) * chartH);
-          const y   = 4 + chartH - barH;
-          return (
-            <g key={label}>
-              {/* Bar */}
-              <rect x={x} y={y} width={barW} height={barH}
-                rx={4} fill="#1A5276" opacity={count === 0 ? 0.2 : 0.85} />
-              {/* Count label on top */}
-              {count > 0 && (
-                <text x={x + barW / 2} y={y - 5} textAnchor="middle" fill="#0D3040" fontSize={11} fontWeight="600">
-                  {count}
-                </text>
-              )}
-              {/* Month label */}
-              <text x={x + barW / 2} y={4 + chartH + padB - 10} textAnchor="middle" fill="#9ca3af" fontSize={11}>
-                {label}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
-// ── Donut Chart (pure SVG) ────────────────────────────────────────────────────
-function DonutChart({ segments, total }) {
-  const size = 100;
-  const r    = 38;
-  const cx   = size / 2;
-  const cy   = size / 2;
-  const circ = 2 * Math.PI * r;
-
-  let offset = 0;
-  const pieces = segments.map(({ label, value, color }) => {
-    const frac = total > 0 ? value / total : 0;
-    const dash = circ * frac;
-    const piece = { label, value, color, dasharray: `${dash} ${circ - dash}`, offset: circ * (1 - offset) };
-    offset += frac;
-    return piece;
-  });
-
-  return (
-    <div className="flex items-center justify-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={cx} cy={cy} r={r} fill="transparent" stroke="#f3f4f6" strokeWidth={14} />
-        {pieces.map(({ label, color, dasharray, offset: strokeOffset }) => (
-          <circle
-            key={label}
-            cx={cx} cy={cy} r={r}
-            fill="transparent"
-            stroke={color}
-            strokeWidth={14}
-            strokeDasharray={dasharray}
-            strokeDashoffset={strokeOffset}
-            strokeLinecap="butt"
-            style={{ transition: 'stroke-dasharray 0.4s ease' }}
-          />
-        ))}
-        <text x={cx} y={cy - 4} textAnchor="middle" fill="#0D3040" fontSize={16} fontWeight="bold">{total}</text>
-        <text x={cx} y={cy + 10} textAnchor="middle" fill="#6b7280" fontSize={8}>projects</text>
-      </svg>
-    </div>
-  );
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function StatCard({ label, value, color, sub, icon }) {
-  const colors = {
-    brand:   'border-brand-200   bg-brand-50   text-brand-600',
-    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    amber:   'border-amber-200   bg-amber-50   text-amber-700',
-    blue:    'border-blue-200    bg-blue-50    text-blue-700',
-  };
-  return (
-    <div className={`rounded-xl border p-5 ${colors[color]}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-          <p className="mt-1 text-3xl font-bold">{value}</p>
-          {sub && <p className="mt-1 text-xs text-gray-500">{sub}</p>}
-        </div>
-        {icon && <div className="opacity-40">{icon}</div>}
-      </div>
-    </div>
-  );
-}
-
-function MiniAvatar({ name, id }) {
-  const palette = ['bg-violet-600','bg-brand-700','bg-blue-600','bg-teal-600','bg-emerald-600','bg-amber-600','bg-rose-600'];
-  const bg = palette[(name?.charCodeAt(0) || 0) % palette.length];
-  return (
-    <div className={`${bg} flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase text-white`}>
-      {name?.[0] || '?'}
-    </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const styles = {
-    active:    'bg-emerald-100 text-emerald-700',
-    complete:  'bg-blue-100    text-blue-700',
-    'on-hold': 'bg-amber-100   text-amber-700',
-  };
-  return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-200 text-gray-500'}`}>
-      {status}
-    </span>
-  );
-}
-
-// ── Mini icons ────────────────────────────────────────────────────────────────
-const ic = (d) => ({ className } = {}) => (
-  <svg className={className || 'h-7 w-7'} fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d={d} />
-  </svg>
-);
-const ClientIcon    = ic('M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0');
-const ProjectIcon   = ic('M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379');
-const CheckIcon     = ic('M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z');
-const DeadlineIcon  = ic('M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5');
-const PeopleIcon    = ic('M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z');
-const CommissionIcon = ic('M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z');
