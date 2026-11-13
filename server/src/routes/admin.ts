@@ -4,7 +4,6 @@ import {
   createUser,
   updateUser,
   getUser,
-  getDashboardStats,
   generateInviteLink,
   listAdmins,
   createAdmin,
@@ -17,7 +16,6 @@ const router = Router();
 
 router.use(authenticate, requireAdmin);
 
-router.get('/stats', getDashboardStats);
 router.get('/admins', listAdmins);
 router.post('/admins', createAdmin);
 router.get('/users', listUsers);
