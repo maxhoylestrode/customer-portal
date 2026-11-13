@@ -6,6 +6,8 @@ const router = Router();
 
 router.use(authenticate, requireStaff);
 
-router.get('/stats', dashboard.stats);
+// One role-aware overview for admin, staff and sales (the controller hides
+// whatever the caller's role shouldn't see).
+router.get('/overview', dashboard.overview);
 
 export default router;
