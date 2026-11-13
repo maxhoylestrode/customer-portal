@@ -84,7 +84,7 @@ export default function ClientsPage() {
                 <th className="px-4 py-3 font-medium text-gray-500">Client</th>
                 <th className="px-4 py-3 font-medium text-gray-500">Company</th>
                 <th className="px-4 py-3 font-medium text-gray-500">Email</th>
-                <th className="px-4 py-3 font-medium text-gray-500">Projects</th>
+                <th className="px-4 py-3 font-medium text-gray-500">Tasks</th>
                 <th className="px-4 py-3 font-medium text-gray-500">Sales Rep</th>
                 <th className="px-4 py-3 font-medium text-gray-500">Created</th>
               </tr>
