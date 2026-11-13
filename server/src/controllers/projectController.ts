@@ -15,11 +15,13 @@ import {
 
 // ── Includes ────────────────────────────────────────────────────────────────
 
-// List view: keep it light. The front end counts done/total subtasks.
+// List view: keep it light. The front end counts done/total subtasks, and the
+// calendar needs milestones.
 const listInclude = {
   client: { select: { id: true, name: true, company: true } },
   assignedUsers: { select: { id: true, name: true } },
   subtasks: { select: { id: true, isDone: true } },
+  milestones: true,
 } satisfies Prisma.ProjectInclude;
 
 // Detail view
