@@ -24,9 +24,9 @@ export async function stats(req: Request, res: Response, next: NextFunction) {
       salesMyClients,
     ] = await Promise.all([
       prisma.client.count({ where: salesClientWhere }),
-      isSales ? 0 : prisma.project.count({ where: { status: 'active' } }),
+      isSales ? 0 : prisma.project.count({ where: { status: 'in_progress' } }),
       isSales ? 0 : prisma.project.count({ where: { status: 'complete' } }),
-      isSales ? 0 : prisma.project.count({ where: { status: 'on-hold' } }),
+      isSales ? 0 : prisma.project.count({ where: { status: 'on_hold' } }),
       prisma.note.count(),
       isSales
         ? []
