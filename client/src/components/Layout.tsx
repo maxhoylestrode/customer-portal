@@ -22,6 +22,7 @@ import {
   FileStack,
   StickyNote,
   Settings,
+  ListChecks,
 } from 'lucide-react';
 
 interface NavItem {
@@ -100,6 +101,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ];
 
   const staffNav: NavItem[] = [
+    { to: '/staff/tasks', label: 'Tasks', icon: <ListChecks className="w-4 h-4" />, hidden: user?.role === 'sales' },
     { to: '/staff/clients', label: 'Clients', icon: <Building2 className="w-4 h-4" /> },
     { to: '/staff/calendar', label: 'Calendar', icon: <Calendar className="w-4 h-4" />, hidden: user?.role === 'sales' },
     { to: '/staff/meetings', label: 'Meetings', icon: <CalendarClock className="w-4 h-4" /> },

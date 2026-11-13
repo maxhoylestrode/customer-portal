@@ -35,6 +35,8 @@ import StaffDashboardPage from './staff/pages/DashboardPage';
 import StaffClientsPage from './staff/pages/ClientsPage';
 import StaffClientDetailPage from './staff/pages/ClientDetailPage';
 import StaffCalendarPage from './staff/pages/CalendarPage';
+import StaffTasksPage from './staff/pages/TasksPage';
+import StaffTaskDetailPage from './staff/pages/TaskDetailPage';
 import StaffMeetingsPage from './staff/pages/MeetingsPage';
 import StaffFilesPage from './staff/pages/FilesPage';
 import StaffNotesPage from './staff/pages/NotesPage';
@@ -94,6 +96,8 @@ export default function App() {
               {/* Staff routes — CRM, open to admin/staff/sales */}
               <Route element={<ProtectedRoute allowedRoles={['admin', 'staff', 'sales']} />}>
                 <Route path="/staff" element={<StaffDashboardPage />} />
+                <Route path="/staff/tasks" element={<StaffTasksPage />} />
+                <Route path="/staff/tasks/:id" element={<StaffTaskDetailPage />} />
                 <Route path="/staff/clients" element={<StaffClientsPage />} />
                 <Route path="/staff/clients/:id" element={<StaffClientDetailPage />} />
                 <Route path="/staff/calendar" element={<StaffCalendarPage />} />
