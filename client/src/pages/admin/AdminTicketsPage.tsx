@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ticketsApi } from '../../api/tickets';
 import { PageHeader } from '../../components/Layout';
@@ -18,7 +18,10 @@ const STATUSES = [
 ];
 
 export default function AdminTicketsPage() {
-  const [statusFilter, setStatusFilter] = useState('');
+  // The dashboard links here with ?status=pending
+  const [searchParams] = useSearchParams();
+  const initial = searchParams.get('status') || '';
+  const [statusFilter, setStatusFilter] = useState(STATUSES.some((s) => s.value === initial) ? initial : '');
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-tickets', statusFilter],

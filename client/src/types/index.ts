@@ -50,24 +50,3 @@ export interface TicketMessage {
   author_name: string;
   author_role: Role;
 }
-
-export interface DashboardStats {
-  pending: number;
-  in_progress: number;
-  completed_this_month: number;
-  total_complete: number;
-  total_out_of_scope: number;
-  total: number;
-  total_clients?: number;
-}
-
-export interface MonthlyTrend {
-  month: string;
-  month_date: string;
-  count: number;
-}
-
-export interface PriorityBreakdown {
-  priority: string;
-  count: number;
-}

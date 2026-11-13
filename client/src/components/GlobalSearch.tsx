@@ -23,7 +23,7 @@ const GROUP_LABELS: Record<keyof SearchResults, string> = {
   clients: 'Clients',
   tickets: 'Tickets',
   notes: 'Notes',
-  projects: 'Projects',
+  projects: 'Tasks',
 };
 
 export default function GlobalSearch() {
@@ -104,7 +104,7 @@ export default function GlobalSearch() {
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search clients, tickets, notes, projects…"
+                placeholder="Search clients, tickets, notes, tasks…"
                 className="flex-1 outline-none text-sm text-[#0D3040] placeholder:text-gray-400"
               />
               <button onClick={() => setOpen(false)} aria-label="Close search">

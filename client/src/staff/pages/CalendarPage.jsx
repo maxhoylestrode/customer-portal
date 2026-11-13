@@ -4,8 +4,11 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import api from '../api';
+import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import StatusPill from '../components/tasks/StatusPill';
+import { STATUSES, formatDay } from '../constants/tasks';
 
 // Deterministic colour palette for clients / users
 const PALETTE = [
@@ -14,11 +17,11 @@ const PALETTE = [
 ];
 const colorFromId = (id) => PALETTE[(id ?? 0) % PALETTE.length];
 
+// Built from the shared task constants so the calendar matches every other view.
+// (Milestones are amber too, but they're drawn separately below.)
 const STATUS_COLORS = {
-  active:    { bg: '#10b981', border: '#059669' },
-  complete:  { bg: '#3b82f6', border: '#2563eb' },
-  'on-hold': { bg: '#f59e0b', border: '#d97706' },
-  default:   { bg: '#6b7280', border: '#4b5563' },
+  ...Object.fromEntries(STATUSES.map((s) => [s.value, { bg: s.hex, border: s.border }])),
+  default: { bg: '#6b7280', border: '#4b5563' },
 };
 
 export default function CalendarPage() {
@@ -78,11 +81,13 @@ export default function CalendarPage() {
       bg = sc.bg; border = sc.border;
     }
 
+    // A task may have no start date: show it on its due date, or failing that
+    // the day it was created.
     events.push({
       id: `project-${p.id}`,
       title: p.name,
-      start: p.startDate,
-      end: p.endDate || p.startDate,
+      start: p.startDate || p.endDate || p.createdAt,
+      end: p.startDate && p.endDate ? p.endDate : undefined,
       allDay: true,
       backgroundColor: bg,
       borderColor: border,
@@ -109,9 +114,7 @@ export default function CalendarPage() {
   const legendItems = (() => {
     if (colorMode === 'status') {
       return [
-        { label: 'Active',    color: STATUS_COLORS.active.bg },
-        { label: 'Complete',  color: STATUS_COLORS.complete.bg },
-        { label: 'On Hold',   color: STATUS_COLORS['on-hold'].bg },
+        ...STATUSES.map((s) => ({ label: s.label, color: s.hex })),
         { label: 'Milestone', color: '#f59e0b' },
       ];
     }
@@ -151,7 +154,7 @@ export default function CalendarPage() {
                   : 'border-gray-300 bg-gray-50 text-gray-500 hover:text-gray-800'
               }`}
             >
-              {filterUser === String(currentUser.id) ? '✓ My Projects' : 'My Projects'}
+              {filterUser === String(currentUser.id) ? '✓ My Tasks' : 'My Tasks'}
             </button>
           )}
           <select
@@ -170,9 +173,9 @@ export default function CalendarPage() {
             className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-900 focus:border-brand-700 focus:outline-none"
           >
             <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="on-hold">On Hold</option>
-            <option value="complete">Complete</option>
+            {STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
           </select>
           <select
             value={filterUser}
@@ -247,12 +250,12 @@ export default function CalendarPage() {
         />
       </div>
 
-      {/* Project detail modal */}
-      <Modal open={!!selected} onClose={() => setSelected(null)} title="Project Details">
+      {/* Task detail modal */}
+      <Modal open={!!selected} onClose={() => setSelected(null)} title="Task Details">
         {selected && (
           <div className="space-y-3 text-sm">
             <div>
-              <span className="text-gray-500">Project:</span>{' '}
+              <span className="text-gray-500">Task:</span>{' '}
               <span className="font-medium text-gray-900">{selected.name}</span>
             </div>
             <div>
@@ -264,7 +267,7 @@ export default function CalendarPage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-500">Status:</span>
-              <StatusBadge status={selected.status} />
+              <StatusPill status={selected.status} />
             </div>
             {selected.description && (
               <div>
@@ -275,15 +278,19 @@ export default function CalendarPage() {
             <div className="flex gap-6">
               <div>
                 <span className="text-gray-500">Start:</span>{' '}
-                <span className="text-gray-800">{new Date(selected.startDate).toLocaleDateString()}</span>
+                <span className="text-gray-800">{selected.startDate ? formatDay(selected.startDate, true) : '—'}</span>
               </div>
               <div>
-                <span className="text-gray-500">End:</span>{' '}
-                <span className="text-gray-800">
-                  {selected.endDate ? new Date(selected.endDate).toLocaleDateString() : 'Ongoing'}
-                </span>
+                <span className="text-gray-500">Due:</span>{' '}
+                <span className="text-gray-800">{selected.endDate ? formatDay(selected.endDate, true) : 'No date'}</span>
               </div>
             </div>
+            <Link
+              to={`/staff/tasks/${selected.id}`}
+              className="inline-block rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
+            >
+              Open task →
+            </Link>
             {Array.isArray(selected.assignedUsers) && selected.assignedUsers.length > 0 && (
               <div>
                 <span className="text-gray-500">Assigned Staff:</span>
@@ -319,18 +326,5 @@ export default function CalendarPage() {
         )}
       </Modal>
     </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const styles = {
-    active:    'bg-emerald-100 text-emerald-700',
-    complete:  'bg-blue-100 text-blue-700',
-    'on-hold': 'bg-amber-100 text-amber-700',
-  };
-  return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status] || 'bg-gray-200 text-gray-500'}`}>
-      {status}
-    </span>
   );
 }

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
 import { ClientAvatar, PREDEFINED_TAGS, HOSTING_TIERS, TagCheckboxes } from './ClientsPage';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import TaskFormModal from '../components/tasks/TaskFormModal';
+import TaskRow, { TaskRowHeader } from '../components/tasks/TaskRow';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
@@ -13,8 +15,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [showProjectForm, setShowProjectForm] = useState(false);
-  const [editProject, setEditProject] = useState(null);
+  const [showTaskForm, setShowTaskForm] = useState(false);
 
   const fetchClient = () => {
     setLoading(true);
@@ -30,6 +31,7 @@ export default function ClientDetailPage() {
           ...p,
           milestones: Array.isArray(p.milestones) ? p.milestones : [],
           assignedUsers: Array.isArray(p.assignedUsers) ? p.assignedUsers : [],
+          subtasks: Array.isArray(p.subtasks) ? p.subtasks : [],
         }));
         setClient(data);
       })
@@ -199,46 +201,38 @@ export default function ClientDetailPage() {
             </div>
           )}
 
-          {/* Projects — hidden for sales role */}
+          {/* Tasks — hidden for sales role */}
           {currentUser?.role !== 'sales' && (
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-[#0D3040]">Projects ({client.projects?.length || 0})</h2>
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div className="flex items-center justify-between p-5 pb-4">
+              <h2 className="text-lg font-semibold text-[#0D3040]">Tasks ({client.projects?.length || 0})</h2>
               <button
-                onClick={() => {
-                  setEditProject(null);
-                  setShowProjectForm(true);
-                }}
+                onClick={() => setShowTaskForm(true)}
                 className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
               >
-                + Add Project
+                + Add Task
               </button>
             </div>
             {!Array.isArray(client.projects) || !client.projects.length ? (
-              <p className="text-sm text-gray-500">No projects yet.</p>
+              <p className="px-5 pb-5 text-sm text-gray-500">No tasks yet.</p>
             ) : (
-              <div className="space-y-3">
-                {client.projects.map((p) => (
-                  <ProjectCard
-                    key={p.id}
-                    project={p}
-                    onEdit={() => {
-                      setEditProject(p);
-                      setShowProjectForm(true);
-                    }}
-                    onDelete={async () => {
-                      if (!confirm('Delete this project?')) return;
-                      try {
-                        await api.delete(`/projects/${p.id}`);
-                        toast.success('Project deleted');
-                        fetchClient();
-                      } catch (err) {
-                        toast.error(err.response?.data?.error || 'Delete failed');
-                      }
-                    }}
-                  />
-                ))}
-              </div>
+              <>
+                <TaskRowHeader compact />
+                <div className="divide-y divide-gray-50">
+                  {/* Open tasks first, finished ones at the bottom */}
+                  {[...client.projects]
+                    .sort((a, b) => (a.status === 'complete') - (b.status === 'complete'))
+                    .map((t) => (
+                      <TaskRow key={t.id} task={{ ...t, client: undefined }} showClient={false} compact />
+                    ))}
+                </div>
+                <Link
+                  to={`/staff/tasks?clientId=${client.id}&includeComplete=1`}
+                  className="block border-t border-gray-100 px-5 py-2.5 text-xs text-brand-600 hover:bg-gray-50 hover:underline"
+                >
+                  View all tasks for this client →
+                </Link>
+              </>
             )}
           </div>
           )} {/* end sales role guard */}
@@ -263,14 +257,13 @@ export default function ClientDetailPage() {
         }}
       />
 
-      {/* Project Form Modal */}
-      <ProjectFormModal
-        open={showProjectForm}
-        project={editProject}
+      {/* New Task Modal */}
+      <TaskFormModal
+        open={showTaskForm}
         clientId={client.id}
-        onClose={() => setShowProjectForm(false)}
+        onClose={() => setShowTaskForm(false)}
         onSaved={() => {
-          setShowProjectForm(false);
+          setShowTaskForm(false);
           fetchClient();
         }}
       />
@@ -401,65 +394,6 @@ function PortalAccessCard({ client, onUpdate }) {
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-function ProjectCard({ project, onEdit, onDelete }) {
-  const statusColor = {
-    active: 'bg-emerald-100 text-emerald-700',
-    complete: 'bg-blue-100 text-blue-700',
-    'on-hold': 'bg-amber-100 text-amber-700',
-  };
-
-  return (
-    <div className="rounded-lg border border-gray-200 p-4 transition hover:border-gray-300">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-medium text-[#0D3040]">{project.name}</h3>
-          {project.description && (
-            <p className="mt-1 text-sm text-gray-500 line-clamp-2">{project.description}</p>
-          )}
-        </div>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusColor[project.status] || 'bg-gray-200 text-gray-500'}`}>
-          {project.status}
-        </span>
-      </div>
-      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-        <span>{new Date(project.startDate).toLocaleDateString()}</span>
-        <span>→</span>
-        <span>{project.endDate ? new Date(project.endDate).toLocaleDateString() : 'Ongoing'}</span>
-        {project.milestones?.length > 0 && (
-          <span className="text-brand-600">{project.milestones.length} milestones</span>
-        )}
-      </div>
-      {Array.isArray(project.milestones) && project.milestones.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {project.milestones.map((m) => (
-            <span key={m.id} className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-              {m.title} — {new Date(m.date).toLocaleDateString()}
-            </span>
-          ))}
-        </div>
-      )}
-      {Array.isArray(project.assignedUsers) && project.assignedUsers.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-gray-500">Assigned:</span>
-          {project.assignedUsers.map((u) => (
-            <span key={u.id} className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-600">
-              {u.name}
-            </span>
-          ))}
-        </div>
-      )}
-      <div className="mt-3 flex gap-2">
-        <button onClick={onEdit} className="text-xs text-brand-600 hover:underline">
-          Edit
-        </button>
-        <button onClick={onDelete} className="text-xs text-red-700 hover:underline">
-          Delete
-        </button>
-      </div>
     </div>
   );
 }
@@ -712,180 +646,6 @@ function EditClientModal({ open, client, onClose, onSaved }) {
           </button>
           <button type="submit" disabled={saving} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
             {saving ? 'Saving…' : 'Save Changes'}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-function ProjectFormModal({ open, project, clientId, onClose, onSaved }) {
-  const isEdit = !!project;
-  const [form, setForm] = useState({ name: '', description: '', status: 'active', startDate: '', endDate: '', milestones: [], assignedUserIds: [] });
-  const [saving, setSaving] = useState(false);
-  const [users, setUsers] = useState([]);
-
-  // Load user list when modal opens
-  useEffect(() => {
-    if (open) {
-      api.get('/users').then((r) => setUsers(r.data)).catch(() => {});
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (project) {
-      setForm({
-        name: project.name || '',
-        description: project.description || '',
-        status: project.status || 'active',
-        startDate: project.startDate ? project.startDate.slice(0, 10) : '',
-        endDate: project.endDate ? project.endDate.slice(0, 10) : '',
-        milestones: Array.isArray(project.milestones)
-          ? project.milestones.map((m) => ({ title: m.title, date: m.date.slice(0, 10) }))
-          : [],
-        assignedUserIds: Array.isArray(project.assignedUsers)
-          ? project.assignedUsers.map((u) => u.id)
-          : [],
-      });
-    } else {
-      setForm({ name: '', description: '', status: 'active', startDate: '', endDate: '', milestones: [], assignedUserIds: [] });
-    }
-  }, [project, open]);
-
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value });
-
-  const toggleUser = (uid) => {
-    const next = form.assignedUserIds.includes(uid)
-      ? form.assignedUserIds.filter((id) => id !== uid)
-      : [...form.assignedUserIds, uid];
-    setForm({ ...form, assignedUserIds: next });
-  };
-
-  const addMilestone = () => setForm({ ...form, milestones: [...(form.milestones || []), { title: '', date: '' }] });
-  const removeMilestone = (i) => setForm({ ...form, milestones: (form.milestones || []).filter((_, idx) => idx !== i) });
-  const setMilestone = (i, field, val) => {
-    const ms = [...form.milestones];
-    ms[i] = { ...ms[i], [field]: val };
-    setForm({ ...form, milestones: ms });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const payload = {
-        ...form,
-        clientId,
-        milestones: (form.milestones || []).filter((m) => m.title && m.date),
-      };
-      if (isEdit) {
-        await api.put(`/projects/${project.id}`, payload);
-        toast.success('Project updated');
-      } else {
-        await api.post('/projects', payload);
-        toast.success('Project created');
-      }
-      onSaved();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Project' : 'New Project'} wide>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Project Name *" value={form.name} onChange={set('name')} required />
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
-          <textarea
-            rows={3}
-            value={form.description}
-            onChange={set('description')}
-            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
-          />
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
-            <select
-              value={form.status}
-              onChange={set('status')}
-              className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none focus:ring-1 focus:ring-brand-700"
-            >
-              <option value="active">Active</option>
-              <option value="on-hold">On Hold</option>
-              <option value="complete">Complete</option>
-            </select>
-          </div>
-          <Input label="Start Date *" type="date" value={form.startDate} onChange={set('startDate')} required />
-          <Input label="End Date" type="date" value={form.endDate} onChange={set('endDate')} />
-        </div>
-
-        {/* Assigned Users */}
-        {Array.isArray(users) && users.length > 0 && (
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Assigned Staff</label>
-            <div className="flex flex-wrap gap-2">
-              {users.map((u) => {
-                const active = form.assignedUserIds.includes(u.id);
-                return (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => toggleUser(u.id)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                      active
-                        ? 'border-brand-600 bg-brand-100 text-brand-600'
-                        : 'border-gray-300 bg-gray-50 text-gray-500 hover:border-gray-400 hover:text-gray-800'
-                    }`}
-                  >
-                    {active && <span className="mr-1">✓</span>}
-                    {u.name}
-                    <span className="ml-1 opacity-50">{u.role === 'admin' ? '(admin)' : ''}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Milestones */}
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">Milestones</label>
-            <button type="button" onClick={addMilestone} className="text-xs text-brand-600 hover:underline">
-              + Add Milestone
-            </button>
-          </div>
-          {(form.milestones || []).map((m, i) => (
-            <div key={i} className="mb-2 flex gap-2">
-              <input
-                placeholder="Title"
-                value={m.title}
-                onChange={(e) => setMilestone(i, 'title', e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-brand-700 focus:outline-none"
-              />
-              <input
-                type="date"
-                value={m.date}
-                onChange={(e) => setMilestone(i, 'date', e.target.value)}
-                className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-brand-700 focus:outline-none"
-              />
-              <button type="button" onClick={() => removeMilestone(i)} className="text-red-700 hover:text-red-600 px-1">
-                ✕
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-gray-500 hover:text-gray-800">
-            Cancel
-          </button>
-          <button type="submit" disabled={saving} className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
-            {saving ? 'Saving…' : isEdit ? 'Update Project' : 'Create Project'}
           </button>
         </div>
       </form>

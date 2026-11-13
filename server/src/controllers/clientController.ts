@@ -80,8 +80,9 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
           include: {
             milestones: true,
             assignedUsers: { select: { id: true, name: true, email: true } },
+            subtasks: { select: { id: true, isDone: true } },
           },
-          orderBy: { startDate: 'desc' },
+          orderBy: [{ endDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         },
         files: {
           select: { id: true, clientId: true, filename: true, mimetype: true, size: true, uploadedAt: true },

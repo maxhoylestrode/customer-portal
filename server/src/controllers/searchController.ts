@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../config/prisma';
+import { STATUS_LABELS } from '../constants/tasks';
 
 // Global search across the staff/admin side of the app. Results are scoped
 // to what the requesting role can already see elsewhere — this endpoint
@@ -101,8 +102,8 @@ export async function search(req: Request, res: Response, next: NextFunction) {
       projects: projects.map((p) => ({
         id: p.id,
         title: p.name,
-        subtitle: `${p.client.name} · ${p.status}`,
-        url: `/staff/clients/${p.clientId}`,
+        subtitle: `${p.client.name} · ${STATUS_LABELS[p.status] ?? p.status}`,
+        url: `/staff/tasks/${p.id}`,
       })),
     });
   } catch (err) {

@@ -1,10 +1,7 @@
 import api from './axios';
-import { User, DashboardStats, MonthlyTrend, PriorityBreakdown } from '../types';
+import { User } from '../types';
 
 export const adminApi = {
-  getStats: () =>
-    api.get<{ stats: DashboardStats; monthlyTrend: MonthlyTrend[]; priorityBreakdown: PriorityBreakdown[] }>('/admin/stats'),
-
   getUsers: () => api.get<{ users: User[] }>('/admin/users'),
 
   getUser: (id: number) =>

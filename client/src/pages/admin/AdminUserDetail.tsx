@@ -240,7 +240,7 @@ export default function AdminUserDetail() {
                 className="block rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#1A5276] hover:bg-gray-50"
               >
                 {crmClient.company || crmClient.name}
-                <span className="block text-xs text-gray-400 mt-0.5">View client profile, projects & files →</span>
+                <span className="block text-xs text-gray-400 mt-0.5">View client profile, tasks & files →</span>
               </Link>
             </div>
           )}
