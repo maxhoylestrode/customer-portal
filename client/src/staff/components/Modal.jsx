@@ -18,7 +18,7 @@ export default function Modal({ open, onClose, title, children, wide }) {
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#0D3040]">{title}</h2>
+          <h2 className="text-lg font-semibold text-brand-700">{title}</h2>
           <button
             onClick={onClose}
             className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700"

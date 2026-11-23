@@ -245,7 +245,7 @@ function EditPermissionsModal({ file, users, meId, meRole, onClose, onSaved }) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#0D3040]">File Permissions</h2>
+          <h2 className="text-lg font-semibold text-brand-700">File Permissions</h2>
           <button onClick={onClose} className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -394,7 +394,7 @@ function UploadModal({ open, folders, users, meId, onClose, onUploaded }) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       <div className="relative z-10 w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#0D3040]">Upload Files</h2>
+          <h2 className="text-lg font-semibold text-brand-700">Upload Files</h2>
           <button onClick={handleClose} className="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -675,7 +675,7 @@ export default function FilesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0D3040]">Files</h1>
+          <h1 className="text-2xl font-bold text-brand-700">Files</h1>
           <p className="mt-1 text-sm text-gray-500">Team storage — upload, organise, and share files.</p>
         </div>
         <button
@@ -824,7 +824,7 @@ export default function FilesPage() {
                       <PermissionBadge file={f} />
                     </span>
                     <span className="hidden md:block w-20 text-xs text-gray-500">{formatBytes(f.size)}</span>
-                    <span className="hidden lg:block w-32 text-xs text-gray-500">{new Date(f.uploadedAt).toLocaleDateString()}</span>
+                    <span className="hidden lg:block w-32 text-xs text-gray-500 num">{new Date(f.uploadedAt).toLocaleDateString()}</span>
                     <div className="flex items-center justify-end gap-2 w-32">
                       {isViewable(f) && (
                         <button onClick={() => setPreviewFile(f)} className="text-xs text-brand-600 hover:underline">View</button>

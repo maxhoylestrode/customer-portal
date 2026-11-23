@@ -42,14 +42,14 @@ export default function TicketDetailPage() {
         <div className="lg:col-span-2 space-y-5">
           {/* Description */}
           <div className="card px-5 py-5">
-            <h3 className="font-semibold text-[#0D3040] mb-3 text-sm">Description</h3>
+            <h3 className="font-semibold text-brand-700 mb-3 text-sm">Description</h3>
             <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
           </div>
 
           {/* Admin notes */}
           {ticket.admin_notes && (
-            <div className="card px-5 py-5 border-l-4 border-[#1A5276]">
-              <h3 className="font-semibold text-[#0D3040] mb-2 text-sm">Notes from Apex Studio</h3>
+            <div className="card px-5 py-5 border-l-4 border-brand-600">
+              <h3 className="font-semibold text-brand-700 mb-2 text-sm">Notes from Apex Studio</h3>
               <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{ticket.admin_notes}</p>
             </div>
           )}
@@ -57,7 +57,7 @@ export default function TicketDetailPage() {
           {/* Attachments */}
           {attachments.length > 0 && (
             <div className="card px-5 py-5">
-              <h3 className="font-semibold text-[#0D3040] mb-3 text-sm flex items-center gap-2">
+              <h3 className="font-semibold text-brand-700 mb-3 text-sm flex items-center gap-2">
                 <Paperclip className="w-4 h-4" />
                 Attachments ({attachments.length})
               </h3>
@@ -71,7 +71,7 @@ export default function TicketDetailPage() {
                       className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
                     >
                       <FileText className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span className="text-sm text-[#0D3040] flex-1 truncate group-hover:underline">{att.filename}</span>
+                      <span className="text-sm text-brand-700 flex-1 truncate group-hover:underline">{att.filename}</span>
                       <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
                     </a>
                   </li>
@@ -101,11 +101,11 @@ export default function TicketDetailPage() {
             </div>
             <div>
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Submitted</p>
-              <p className="text-sm text-gray-700">{formatDate(ticket.created_at)}</p>
+              <p className="text-sm text-gray-700 num">{formatDate(ticket.created_at)}</p>
             </div>
             <div>
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">Last Updated</p>
-              <p className="text-sm text-gray-700">{formatDate(ticket.updated_at)}</p>
+              <p className="text-sm text-gray-700 num">{formatDate(ticket.updated_at)}</p>
             </div>
           </div>
         </div>

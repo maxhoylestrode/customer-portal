@@ -34,17 +34,17 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#D6EAF8] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-[#0D3040] rounded-t-xl px-8 py-6 text-center">
-          <h1 className="text-white font-bold text-xl">Apex Studio Codes</h1>
-          <p className="text-blue-200 text-sm mt-1">Client Portal</p>
+        <div className="bg-white border border-line border-b-0 rounded-t-xl px-8 pt-8 pb-2 text-center">
+          <h1 className="text-gray-900 font-semibold text-xl tracking-tight">Apex Studio Codes</h1>
+          <p className="text-gray-500 text-sm mt-1">Client Portal</p>
         </div>
-        <div className="bg-white rounded-b-xl shadow-xl px-8 py-8">
+        <div className="bg-white border border-line border-t-0 rounded-b-xl px-8 pt-6 pb-8">
           {sentTo ? (
             <div className="text-center">
               <MailCheck className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <h2 className="text-lg font-semibold text-[#0D3040] mb-2">Check your email</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">Check your email</h2>
               <p className="text-gray-500 text-sm mb-2">
                 If <span className="font-medium text-gray-700">{sentTo}</span> has an account, we've sent it a link to reset your password.
               </p>
@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h2 className="text-lg font-semibold text-[#0D3040] mb-2">Forgotten your password?</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-2">Forgotten your password?</h2>
               <p className="text-gray-500 text-sm mb-6">Enter the email you sign in with and we'll send you a link to set a new one.</p>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
                 </button>
               </form>
               <p className="text-center text-sm mt-6">
-                <Link to="/login" className="text-[#0D3040] font-medium hover:underline">Back to sign in</Link>
+                <Link to="/login" className="text-brand-500 font-medium hover:underline">Back to sign in</Link>
               </p>
             </>
           )}

@@ -61,7 +61,7 @@ export default function TicketChat({ ticketId }: { ticketId: number }) {
 
   return (
     <div className="card px-5 py-5">
-      <h3 className="font-semibold text-[#0D3040] mb-3 text-sm flex items-center gap-2">
+      <h3 className="font-semibold text-brand-700 mb-3 text-sm flex items-center gap-2">
         <MessageCircle className="w-4 h-4" />
         Messages
       </h3>
@@ -74,12 +74,12 @@ export default function TicketChat({ ticketId }: { ticketId: number }) {
           const isMine = m.user_id === user?.id;
           return (
             <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${isMine ? 'bg-[#0D3040] text-white' : 'bg-gray-100 text-gray-800'}`}>
+              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${isMine ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-800'}`}>
                 {!isMine && (
-                  <p className={`text-xs font-medium mb-0.5 ${isMine ? 'text-blue-200' : 'text-gray-500'}`}>{m.author_name}</p>
+                  <p className={`text-xs font-medium mb-0.5 ${isMine ? 'text-white/70' : 'text-gray-500'}`}>{m.author_name}</p>
                 )}
                 <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
-                <p className={`text-[11px] mt-1 ${isMine ? 'text-blue-200' : 'text-gray-400'}`}>{formatDateTime(m.created_at)}</p>
+                <p className={`text-[11px] mt-1 ${isMine ? 'text-white/70' : 'text-gray-400'}`}><span className="num">{formatDateTime(m.created_at)}</span></p>
               </div>
             </div>
           );

@@ -5,7 +5,7 @@ export default function StackedBar({ segments, emptyLabel = 'Nothing yet' }) {
 
   return (
     <div>
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100">
+      <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-gray-100">
         {total > 0 &&
           segments
             .filter((s) => s.value > 0)
@@ -20,11 +20,11 @@ export default function StackedBar({ segments, emptyLabel = 'Nothing yet' }) {
       {total === 0 ? (
         <p className="mt-2 text-xs text-gray-400">{emptyLabel}</p>
       ) : (
-        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+        <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
           {segments.map((s) => (
             <li key={s.label} className="flex items-center gap-1.5 text-xs text-gray-600">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-              {s.label} <span className="font-semibold text-brand-700">{s.value}</span>
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
+              {s.label} <span className="num font-medium text-gray-900">{s.value}</span>
             </li>
           ))}
         </ul>

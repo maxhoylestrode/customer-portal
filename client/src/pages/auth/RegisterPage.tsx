@@ -35,9 +35,9 @@ export default function RegisterPage() {
 
   if (invalidInvite || !invite) {
     return (
-      <div className="min-h-screen bg-[#D6EAF8] flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-xl px-8 py-8 max-w-md w-full text-center">
-          <h2 className="text-lg font-semibold text-[#0D3040] mb-3">Invalid Invitation</h2>
+      <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
+        <div className="bg-white border border-line rounded-xl px-8 py-8 max-w-md w-full text-center">
+          <h2 className="text-base font-semibold text-gray-900 mb-3">Invalid Invitation</h2>
           <p className="text-gray-500 text-sm mb-6">
             This registration link is invalid or has expired. Please contact Apex Studio Codes to receive a new invite.
           </p>
@@ -73,16 +73,16 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#D6EAF8] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-[#0D3040] rounded-t-xl px-8 py-6 text-center">
-          <img src="/logo.png" alt="Apex Studio Codes" className="h-12 mx-auto mb-3" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-          <h1 className="text-white font-bold text-xl">Apex Studio Codes</h1>
-          <p className="text-blue-200 text-sm mt-1">Create your portal account</p>
+        <div className="bg-white border border-line border-b-0 rounded-t-xl px-8 pt-8 pb-2 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-brand-700"><img src="/logo.png" alt="Apex Studio Codes" className="h-8 w-8 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /></div>
+          <h1 className="text-gray-900 font-semibold text-xl tracking-tight">Apex Studio Codes</h1>
+          <p className="text-gray-500 text-sm mt-1">Create your portal account</p>
         </div>
 
-        <div className="bg-white rounded-b-xl shadow-xl px-8 py-8">
-          <h2 className="text-lg font-semibold text-[#0D3040] mb-6">Set up your account</h2>
+        <div className="bg-white border border-line border-t-0 rounded-b-xl px-8 pt-6 pb-8">
+          <h2 className="text-base font-semibold text-gray-900 mb-6">Set up your account</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>

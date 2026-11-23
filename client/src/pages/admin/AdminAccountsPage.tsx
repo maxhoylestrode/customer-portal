@@ -88,8 +88,8 @@ export default function AdminAccountsPage() {
                 <tr key={admin.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-[#1A5276] shrink-0" />
-                      <span className="font-medium text-[#0D3040]">{admin.name}</span>
+                      <ShieldCheck className="w-4 h-4 text-brand-600 shrink-0" />
+                      <span className="font-medium text-brand-700">{admin.name}</span>
                       {admin.id === currentUser?.id && (
                         <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">You</span>
                       )}
@@ -101,7 +101,7 @@ export default function AdminAccountsPage() {
                       {admin.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-gray-500">{formatDate(admin.created_at)}</td>
+                  <td className="px-5 py-3 text-gray-500 num">{formatDate(admin.created_at)}</td>
                 </tr>
               ))}
             </tbody>

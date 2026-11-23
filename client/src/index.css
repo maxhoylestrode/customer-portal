@@ -2,59 +2,132 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colour tokens are generated in tailwind.config.js (light on :root, dark on
+   :root[data-theme="dark"]). Everything below uses those tokens. */
+
 @layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
   body {
-    @apply text-[#4A4A4A] bg-gray-50;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    @apply bg-canvas text-gray-700 font-sans text-[14px];
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  h1, h2, h3, h4 {
+    @apply text-gray-900;
+    letter-spacing: -0.011em;
+  }
+  ::selection {
+    @apply bg-brand-500/30;
+  }
+  input, select, textarea {
+    color-scheme: inherit;
+  }
+  /* Native form controls without our classes still follow the theme */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+  select,
+  textarea {
+    @apply bg-white;
+  }
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: rgb(var(--brand-bg-700));
+  }
+  /* Thin, quiet scrollbars like the rest of the chrome */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line-strong)) transparent;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-[#0D3040] hover:bg-[#1A5276] text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-1.5 bg-brand-700 hover:bg-brand-600 text-white text-sm font-medium px-3.5 py-2 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-[#0D3040] font-semibold px-4 py-2 rounded-lg border border-[#0D3040] transition-colors duration-150 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 text-gray-800 text-sm font-medium px-3.5 py-2 rounded-lg border border-line-strong transition-colors duration-150 disabled:opacity-50;
   }
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-150 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg transition-colors duration-150 disabled:opacity-50;
   }
   .input {
-    @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0D3040] focus:border-transparent transition;
+    @apply w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition;
   }
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-100;
+    @apply bg-white rounded-xl border border-line;
   }
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-xs font-medium text-gray-500 mb-1.5;
   }
   .error-text {
     @apply text-red-500 text-xs mt-1;
   }
+  /* IDs, dates and counts: Geist Mono, slightly smaller so it sits with the sans text */
+  .num {
+    @apply font-mono tabular-nums;
+    font-size: 0.92em;
+    letter-spacing: -0.01em;
+  }
 }
 
-/* FullCalendar overrides: the client portal's light navy theme */
+/* In dark mode drop-shadows just read as smudges; borders do the work */
+:root[data-theme='dark'] .shadow-sm,
+:root[data-theme='dark'] .shadow {
+  box-shadow: none;
+}
+:root[data-theme='dark'] .shadow-md,
+:root[data-theme='dark'] .shadow-lg,
+:root[data-theme='dark'] .shadow-xl,
+:root[data-theme='dark'] .shadow-2xl {
+  box-shadow: 0 0 0 1px rgb(var(--line)), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+}
+
+/* FullCalendar, themed from the same tokens */
 .fc {
-  --fc-border-color: #e5e7eb;
-  --fc-button-bg-color: #0D3040;
-  --fc-button-border-color: #0D3040;
-  --fc-button-hover-bg-color: #1A5276;
-  --fc-button-hover-border-color: #1A5276;
-  --fc-button-active-bg-color: #1A5276;
-  --fc-today-bg-color: #eef6fb;
-  --fc-event-bg-color: #1A5276;
-  --fc-event-border-color: #0D3040;
-  --fc-page-bg-color: #ffffff;
-  --fc-neutral-bg-color: #f9fafb;
-  --fc-list-event-hover-bg-color: #f3f4f6;
-  color: #374151;
+  --fc-border-color: rgb(var(--line));
+  --fc-button-bg-color: rgb(var(--surface));
+  --fc-button-border-color: rgb(var(--line-strong));
+  --fc-button-text-color: rgb(var(--fg));
+  --fc-button-hover-bg-color: rgb(var(--bg-gray-100));
+  --fc-button-hover-border-color: rgb(var(--line-strong));
+  --fc-button-active-bg-color: rgb(var(--brand-bg-700));
+  --fc-button-active-border-color: rgb(var(--brand-bg-700));
+  --fc-today-bg-color: rgb(var(--brand-bg-500) / 0.08);
+  --fc-event-bg-color: rgb(var(--brand-bg-700));
+  --fc-event-border-color: rgb(var(--brand-bg-700));
+  --fc-page-bg-color: rgb(var(--surface));
+  --fc-neutral-bg-color: rgb(var(--bg-gray-50));
+  --fc-list-event-hover-bg-color: rgb(var(--bg-gray-50));
+  color: rgb(var(--c-gray-700));
+  font-size: 13px;
 }
-
-.fc .fc-col-header-cell-cushion,
+.fc .fc-button {
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  box-shadow: none !important;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  color: #fff;
+}
+.fc .fc-toolbar-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: rgb(var(--fg));
+}
+.fc .fc-col-header-cell-cushion {
+  color: rgb(var(--muted));
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 .fc .fc-daygrid-day-number {
-  color: #4b5563;
+  color: rgb(var(--muted));
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 12px;
 }
-
 .fc .fc-scrollgrid {
-  border-color: #e5e7eb;
+  border-color: rgb(var(--line));
 }

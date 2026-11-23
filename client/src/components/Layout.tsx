@@ -5,6 +5,7 @@ import { authApi } from '../api/auth';
 import { useToast } from './Toast';
 import GlobalSearch from './GlobalSearch';
 import { usePortal } from '../staff/context/PortalContext';
+import { useTheme } from '../hooks/useTheme';
 
 const DEFAULT_PORTAL_NAME = 'Apex Portal';
 import {
@@ -23,6 +24,8 @@ import {
   StickyNote,
   Settings,
   ListChecks,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 interface NavItem {
@@ -39,15 +42,15 @@ interface NavGroup {
 
 function NavLinks({ groups, onClick }: { groups: NavGroup[]; onClick?: () => void }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {groups.map((group, i) => (
         <div key={group.label || i}>
           {group.label && (
-            <p className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-blue-300">
+            <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-500">
               {group.label}
             </p>
           )}
-          <nav className="space-y-1">
+          <nav className="space-y-0.5">
             {group.items
               .filter((item) => !item.hidden)
               .map((item) => (
@@ -57,8 +60,10 @@ function NavLinks({ groups, onClick }: { groups: NavGroup[]; onClick?: () => voi
                   onClick={onClick}
                   end={item.to.endsWith('dashboard') || item.to === '/admin' || item.to === '/staff'}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10 hover:text-white'
+                    `group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+                      isActive
+                        ? 'bg-gray-100 text-gray-900 [&>svg]:text-brand-500'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 [&>svg]:text-gray-400'
                     }`
                   }
                 >
@@ -141,17 +146,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   // Branding set in Staff Settings. Until a custom name is saved, keep the
   // original "Apex Studio" sidebar title clients already know.
   const { logoUrl, portalName } = usePortal();
+  const { theme, toggle: toggleTheme } = useTheme();
   const sidebarTitle = portalName && portalName !== DEFAULT_PORTAL_NAME ? portalName : 'Apex Studio';
 
   const sidebar = (
-    <aside className="flex flex-col h-full w-64 shrink-0 bg-[#0D3040] text-white">
+    <aside className="flex flex-col h-full w-60 shrink-0 bg-sidebar border-r border-line">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/10">
+      <div className="px-4 pt-5 pb-4">
         <Link to={homeLink} className="flex items-center gap-3">
-          <img src={logoUrl || '/logo.png'} alt={sidebarTitle} className="h-8 w-auto" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-          <div>
-            <p className="font-bold text-sm leading-tight">{sidebarTitle}</p>
-            <p className="text-xs text-blue-200">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-brand-700">
+            <img src={logoUrl || '/logo.png'} alt={sidebarTitle} className="h-6 w-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          </div>
+          <div className="min-w-0">
+            <p className="font-semibold text-sm leading-tight text-gray-900 truncate">{sidebarTitle}</p>
+            <p className="text-xs text-gray-500">
               {user?.role === 'client' ? 'Client Portal' : 'Staff Portal'}
             </p>
           </div>
@@ -160,34 +168,43 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Search — staff/admin/sales only, not the client ticket portal */}
       {user?.role !== 'client' && (
-        <div className="px-3 pt-3">
+        <div className="px-3">
           <GlobalSearch />
         </div>
       )}
 
       {/* Nav */}
-      <div className="flex-1 px-3 py-4 overflow-y-auto">
+      <div className="flex-1 px-3 py-5 overflow-y-auto">
         <NavLinks groups={navGroups} onClick={() => setMobileOpen(false)} />
       </div>
 
       {/* User */}
-      <div className="px-3 py-4 border-t border-white/10">
-        <div className="flex items-center gap-3 px-3 py-2 mb-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold bg-white/20">
+      <div className="px-3 py-3 border-t border-line">
+        <div className="flex items-center gap-3 px-2 py-2">
+          <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-brand-700 text-white">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate text-white">{user?.name}</p>
-            <p className="text-xs capitalize text-blue-200">{user?.role}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-medium truncate text-gray-900">{user?.name}</p>
+            <p className="text-xs capitalize text-gray-500">{user?.role}</p>
           </div>
+          <button
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            aria-label="Toggle theme"
+            className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            aria-label="Sign out"
+            className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm transition-colors text-blue-100 hover:bg-white/10 hover:text-white"
-        >
-          <LogOut className="w-4 h-4" />
-          Sign Out
-        </button>
       </div>
     </aside>
   );
@@ -200,22 +217,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile sidebar */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <div className="relative flex h-full w-64">{sidebar}</div>
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <div className="relative flex h-full w-60">{sidebar}</div>
         </div>
       )}
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
-        <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-[#0D3040] text-white">
+        <header className="md:hidden flex items-center gap-3 px-4 py-3 bg-sidebar border-b border-line text-gray-900">
           <button onClick={() => setMobileOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
           <span className="font-semibold text-sm">{portalName || DEFAULT_PORTAL_NAME}</span>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-y-auto bg-canvas">
           {wideLayout ? (
             <div className="p-6 lg:p-8">{children}</div>
           ) : (
@@ -241,18 +258,18 @@ export function PageHeader({
   return (
     <div className="mb-6">
       {breadcrumb && (
-        <nav className="flex items-center gap-1 text-xs text-gray-500 mb-2">
+        <nav className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-3">
           {breadcrumb.map((crumb, i) => (
             <React.Fragment key={crumb.to}>
-              {i > 0 && <ChevronRight className="w-3 h-3" />}
-              <Link to={crumb.to} className="hover:text-[#0D3040]">{crumb.label}</Link>
+              {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+              <Link to={crumb.to} className="hover:text-gray-900">{crumb.label}</Link>
             </React.Fragment>
           ))}
         </nav>
       )}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#0D3040]">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{title}</h1>
           {subtitle && <p className="text-gray-500 text-sm mt-1">{subtitle}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}

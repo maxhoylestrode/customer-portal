@@ -42,8 +42,8 @@ export default function AdminTicketsPage() {
             onClick={() => setStatusFilter(s.value)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               statusFilter === s.value
-                ? 'bg-[#0D3040] text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:border-[#0D3040]'
+                ? 'bg-brand-700 text-white'
+                : 'bg-white text-gray-600 border border-gray-200 hover:border-brand-700'
             }`}
           >
             {s.label}
@@ -74,21 +74,21 @@ export default function AdminTicketsPage() {
             <tbody className="divide-y divide-gray-50">
               {tickets.map((ticket) => (
                 <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-gray-400">{ticket.id}</td>
+                  <td className="px-4 py-3 text-gray-400 num">{ticket.id}</td>
                   <td className="px-4 py-3 max-w-xs">
-                    <Link to={`/admin/tickets/${ticket.id}`} className="font-medium text-[#0D3040] hover:underline flex items-center gap-1.5">
+                    <Link to={`/admin/tickets/${ticket.id}`} className="font-medium text-brand-700 hover:underline flex items-center gap-1.5">
                       <span className="truncate">{ticket.title}</span>
                       {(ticket.attachment_count ?? 0) > 0 && <Paperclip className="w-3 h-3 text-gray-400 shrink-0" />}
                     </Link>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell text-gray-600 text-xs">
-                    <Link to={`/admin/users/${ticket.user_id}`} className="hover:text-[#0D3040] hover:underline">
+                    <Link to={`/admin/users/${ticket.user_id}`} className="hover:text-brand-700 hover:underline">
                       {ticket.company_name || ticket.client_name}
                     </Link>
                   </td>
                   <td className="px-4 py-3"><StatusBadge status={ticket.status} size="sm" /></td>
                   <td className="px-4 py-3 hidden lg:table-cell"><PriorityBadge priority={ticket.priority} /></td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-gray-400 text-xs">{formatDate(ticket.created_at)}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell text-gray-400 text-xs num">{formatDate(ticket.created_at)}</td>
                 </tr>
               ))}
             </tbody>

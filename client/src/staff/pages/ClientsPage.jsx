@@ -41,7 +41,7 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-[#0D3040]">Clients</h1>
+        <h1 className="text-2xl font-bold text-brand-700">Clients</h1>
         <button
           onClick={() => setShowCreate(true)}
           className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
@@ -108,7 +108,7 @@ export default function ClientsPage() {
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-gray-500 num">{new Date(c.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>

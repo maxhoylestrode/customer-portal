@@ -318,7 +318,7 @@ export default function MeetingsPage() {
       {/* Header */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0D3040]">Meetings Calendar</h1>
+          <h1 className="text-2xl font-bold text-brand-700">Meetings Calendar</h1>
           <p className="mt-0.5 text-sm text-gray-500">
             {isSales
               ? 'Click a highlighted day to book a meeting. Use the staff selector to assign to a specific team member.'

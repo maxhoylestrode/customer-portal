@@ -22,7 +22,7 @@ export default function NotificationsCard({ description }: { description: string
 
   return (
     <div className="card px-5 py-5">
-      <h2 className="font-semibold text-[#0D3040] text-sm flex items-center gap-2 mb-2">
+      <h2 className="font-semibold text-brand-700 text-sm flex items-center gap-2 mb-2">
         <Bell className="w-4 h-4" />
         Push Notifications
       </h2>

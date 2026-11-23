@@ -30,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div className={`relative bg-white rounded-xl shadow-xl w-full ${widths[size]} max-h-[90vh] overflow-y-auto`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-[#0D3040]">{title}</h2>
+          <h2 className="text-lg font-semibold text-brand-700">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-5 h-5" />
           </button>

@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
               {users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
-                    <Link to={`/admin/users/${user.id}`} className="font-medium text-[#0D3040] hover:underline">
+                    <Link to={`/admin/users/${user.id}`} className="font-medium text-brand-700 hover:underline">
                       {user.name}
                     </Link>
                     <p className="text-xs text-gray-400">{user.email}</p>
@@ -126,13 +126,13 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3 hidden lg:table-cell">
                     {user.website_url ? (
                       <a href={user.website_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-[#1A5276] hover:underline text-xs">
+                        className="flex items-center gap-1 text-brand-600 hover:underline text-xs">
                         <Globe className="w-3 h-3" />
                         {user.website_url.replace(/^https?:\/\//, '')}
                       </a>
                     ) : '—'}
                   </td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-gray-400 text-xs">{formatDate(user.created_at)}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell text-gray-400 text-xs num">{formatDate(user.created_at)}</td>
                   <td className="px-4 py-3">
                     {user.is_active ? (
                       <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full">

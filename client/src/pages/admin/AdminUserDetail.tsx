@@ -132,7 +132,7 @@ export default function AdminUserDetail() {
         <div className="lg:col-span-2 space-y-5">
           {editMode ? (
             <form onSubmit={handleSubmit((d) => updateMutation.mutate(d))} className="card px-5 py-5 space-y-4">
-              <h3 className="font-semibold text-[#0D3040] text-sm">Edit Client Details</h3>
+              <h3 className="font-semibold text-brand-700 text-sm">Edit Client Details</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Full Name <span className="text-red-500">*</span></label>
@@ -174,7 +174,7 @@ export default function AdminUserDetail() {
             </form>
           ) : (
             <div className="card px-5 py-5">
-              <h3 className="font-semibold text-[#0D3040] text-sm mb-4">Client Information</h3>
+              <h3 className="font-semibold text-brand-700 text-sm mb-4">Client Information</h3>
               <dl className="space-y-3">
                 <InfoRow icon={<Mail className="w-4 h-4" />} label="Email" value={user.email} />
                 <InfoRow icon={<Phone className="w-4 h-4" />} label="Phone" value={user.phone || '—'} />
@@ -185,7 +185,7 @@ export default function AdminUserDetail() {
                   value={
                     user.website_url ? (
                       <a href={user.website_url} target="_blank" rel="noopener noreferrer"
-                        className="text-[#1A5276] hover:underline">
+                        className="text-brand-600 hover:underline">
                         {user.website_url}
                       </a>
                     ) : '—'
@@ -201,7 +201,7 @@ export default function AdminUserDetail() {
           {/* Tickets */}
           <div className="card">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h3 className="font-semibold text-[#0D3040] text-sm flex items-center gap-2">
+              <h3 className="font-semibold text-brand-700 text-sm flex items-center gap-2">
                 <Ticket className="w-4 h-4" />
                 Tickets
               </h3>
@@ -214,8 +214,8 @@ export default function AdminUserDetail() {
                   <li key={ticket.id}>
                     <Link to={`/admin/tickets/${ticket.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50">
                       <div>
-                        <p className="text-sm font-medium text-[#0D3040]">#{ticket.id} — {ticket.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{formatDate(ticket.created_at)}</p>
+                        <p className="text-sm font-medium text-brand-700"><span className="num text-gray-500">#{ticket.id}</span> {ticket.title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5 num">{formatDate(ticket.created_at)}</p>
                       </div>
                       <StatusBadge status={ticket.status} size="sm" />
                     </Link>
@@ -231,13 +231,13 @@ export default function AdminUserDetail() {
           {/* CRM link */}
           {crmClient && (
             <div className="card px-5 py-5">
-              <h3 className="font-semibold text-[#0D3040] text-sm mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-brand-700 text-sm mb-3 flex items-center gap-2">
                 <LayoutGrid className="w-4 h-4" />
                 Staff CRM Record
               </h3>
               <Link
                 to={`/staff/clients/${crmClient.id}`}
-                className="block rounded-lg border border-gray-200 px-3 py-2 text-sm text-[#1A5276] hover:bg-gray-50"
+                className="block rounded-lg border border-gray-200 px-3 py-2 text-sm text-brand-600 hover:bg-gray-50"
               >
                 {crmClient.company || crmClient.name}
                 <span className="block text-xs text-gray-400 mt-0.5">View client profile, tasks & files →</span>
@@ -247,7 +247,7 @@ export default function AdminUserDetail() {
 
           {/* Stats */}
           <div className="card px-5 py-5">
-            <h3 className="font-semibold text-[#0D3040] text-sm mb-4">Ticket Summary</h3>
+            <h3 className="font-semibold text-brand-700 text-sm mb-4">Ticket Summary</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Pending</span>
@@ -270,7 +270,7 @@ export default function AdminUserDetail() {
 
           {/* Account actions */}
           <div className="card px-5 py-5 space-y-3">
-            <h3 className="font-semibold text-[#0D3040] text-sm border-b border-gray-100 pb-3">Account Actions</h3>
+            <h3 className="font-semibold text-brand-700 text-sm border-b border-gray-100 pb-3">Account Actions</h3>
 
             <div>
               <p className="text-xs text-gray-500 mb-2">
