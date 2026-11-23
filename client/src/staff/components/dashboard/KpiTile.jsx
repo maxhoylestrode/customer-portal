@@ -2,14 +2,13 @@ import { Link } from 'react-router-dom';
 
 // One cell of the stat strip: small label, the number, and a short line of context.
 export default function KpiTile({ kpi }) {
-  const tone =
-    kpi.trend === 'up'
+  const tone = kpi.alert
+    ? 'text-red-500'
+    : kpi.trend === 'up'
       ? 'text-emerald-600'
       : kpi.trend === 'down'
-        ? 'text-red-500'
-        : kpi.key === 'myOpenTasks' && /^\d+ overdue/.test(kpi.context)
-          ? 'text-red-500'
-          : 'text-gray-500';
+        ? 'text-amber-600'
+        : 'text-gray-500';
 
   return (
     <Link

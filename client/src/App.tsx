@@ -60,7 +60,7 @@ export default function App() {
     <AuthContext.Provider value={{ user, isLoading, setUser }}>
       <PortalProvider>
         <ToastProvider>
-          <Toaster position="top-right" toastOptions={{ style: { background: 'rgb(var(--surface))', color: 'rgb(var(--fg))', border: '1px solid rgb(var(--line))', fontSize: '13px' } }} />
+          <Toaster position="bottom-right" toastOptions={{ style: { background: 'rgb(var(--surface))', color: 'rgb(var(--fg))', border: '1px solid rgb(var(--line))', fontSize: '13px' } }} />
           <BrowserRouter>
             <Routes>
               {/* Public routes */}

@@ -113,7 +113,7 @@ export default function DashboardPage() {
             {data.myTasks.length === 0 ? (
               <EmptyLine>No tasks assigned to you</EmptyLine>
             ) : (
-              <TaskListMini tasks={data.myTasks} />
+              <TaskListMini tasks={data.myTasks} onChanged={refetch} />
             )}
           </SectionCard>
         )}
