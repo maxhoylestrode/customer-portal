@@ -172,7 +172,10 @@ export async function refresh(req: Request, res: Response, next: NextFunction) {
     });
     if (!stored) throw new AppError('Refresh token not found or expired', 401);
 
-    await prisma.refreshToken.delete({ where: { id: stored.id } });
+    // Claim the token atomically: if a parallel request already used it, this
+    // one gets a clean 401 instead of a 404 from deleting a missing row.
+    const claimed = await prisma.refreshToken.deleteMany({ where: { id: stored.id } });
+    if (claimed.count === 0) throw new AppError('Refresh token already used', 401);
 
     // Re-read the account rather than trusting the old token: a deactivated
     // user must not be able to refresh, and a role change must take effect.

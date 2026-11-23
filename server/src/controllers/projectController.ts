@@ -72,17 +72,21 @@ function clampProgress(value: unknown): number | undefined {
   return Math.min(100, Math.max(0, n));
 }
 
-// Only active admin/staff accounts can be assigned (sales can't see tasks).
-async function validateAssignees(value: unknown): Promise<number[] | undefined> {
+// Only active admin/staff accounts can be newly assigned (sales can't see
+// tasks). People already on the task are let through even if they've since
+// been deactivated or moved to sales, so the task can still be edited; the
+// edit just can't add anyone new who isn't eligible.
+async function validateAssignees(value: unknown, alreadyAssigned: number[] = []): Promise<number[] | undefined> {
   if (value === undefined) return undefined;
   if (!Array.isArray(value)) throw new AppError('assignedUserIds must be a list', 400);
   const ids = Array.from(new Set(value.map((v) => parseInt(String(v), 10))));
   if (ids.some((n) => !Number.isInteger(n))) throw new AppError('Invalid assignee', 400);
-  if (ids.length === 0) return [];
+  const toCheck = ids.filter((n) => !alreadyAssigned.includes(n));
+  if (toCheck.length === 0) return ids;
   const found = await prisma.user.count({
-    where: { id: { in: ids }, role: { in: ['admin', 'staff'] }, isActive: true },
+    where: { id: { in: toCheck }, role: { in: ['admin', 'staff'] }, isActive: true },
   });
-  if (found !== ids.length) throw new AppError('Invalid assignee', 400);
+  if (found !== toCheck.length) throw new AppError('Invalid assignee', 400);
   return ids;
 }
 
@@ -247,7 +251,10 @@ export async function update(req: Request, res: Response, next: NextFunction) {
     const progressIn = clampProgress(body.progress);
     const startDate = parseDate(body.startDate, 'start date');
     const endDate = parseDate(body.endDate, 'due date');
-    const assigneeIds = await validateAssignees(body.assignedUserIds);
+    const assigneeIds = await validateAssignees(
+      body.assignedUserIds,
+      existing.assignedUsers.map((u) => u.id)
+    );
     const milestones = body.milestones !== undefined ? parseMilestones(body.milestones) : undefined;
 
     const data: Prisma.ProjectUpdateInput = {};
@@ -418,10 +425,10 @@ export async function removeUpdate(req: Request, res: Response, next: NextFuncti
 
 const subtaskInclude = { assignee: { select: { id: true, name: true } } } satisfies Prisma.SubtaskInclude;
 
-async function validateSubtaskAssignee(value: unknown): Promise<number | null | undefined> {
+async function validateSubtaskAssignee(value: unknown, current: number | null = null): Promise<number | null | undefined> {
   if (value === undefined) return undefined;
   if (value === null || value === '') return null;
-  const ids = await validateAssignees([value]);
+  const ids = await validateAssignees([value], current === null ? [] : [current]);
   return ids![0];
 }
 
@@ -474,7 +481,7 @@ export async function updateSubtask(req: Request, res: Response, next: NextFunct
       if (title.length > 255) throw new AppError('Subtask title is too long', 400);
       data.title = title;
     }
-    const assigneeId = await validateSubtaskAssignee(req.body.assigneeId);
+    const assigneeId = await validateSubtaskAssignee(req.body.assigneeId, existing.assigneeId);
     if (assigneeId !== undefined) data.assigneeId = assigneeId;
     const dueDate = parseDate(req.body.dueDate, 'due date');
     if (dueDate !== undefined) data.dueDate = dueDate;
