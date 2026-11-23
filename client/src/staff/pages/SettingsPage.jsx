@@ -79,11 +79,11 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-[#0D3040]">Settings</h1>
+      <h1 className="text-2xl font-bold text-brand-700">Settings</h1>
 
       {/* Portal Logo */}
       <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-[#0D3040]">Portal Logo</h2>
+        <h2 className="mb-4 text-lg font-semibold text-brand-700">Portal Logo</h2>
         <div className="flex items-center gap-6">
           {/* Preview */}
           <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-gray-300 bg-gray-50">
@@ -125,7 +125,7 @@ export default function SettingsPage() {
 
       {/* Current user card */}
       <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-[#0D3040]">Your Profile</h2>
+        <h2 className="mb-4 text-lg font-semibold text-brand-700">Your Profile</h2>
         <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-gray-500">Name</dt>
@@ -151,7 +151,7 @@ export default function SettingsPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-[#0D3040]">User Management</h2>
+              <h2 className="text-lg font-semibold text-brand-700">User Management</h2>
               <p className="mt-1 text-sm text-gray-500">Manage all staff accounts</p>
             </div>
             <button
@@ -210,7 +210,7 @@ export default function SettingsPage() {
                         </span>
                       </td>
                       <td className="py-3 pr-4 text-gray-500">
-                        {new Date(u.createdAt).toLocaleDateString()}
+                        <span className="num">{new Date(u.createdAt).toLocaleDateString()}</span>
                       </td>
                       <td className="py-3 text-right">
                         <div className="flex justify-end gap-2">
@@ -241,7 +241,7 @@ export default function SettingsPage() {
 
       {/* About */}
       <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="mb-2 text-lg font-semibold text-[#0D3040]">About</h2>
+        <h2 className="mb-2 text-lg font-semibold text-brand-700">About</h2>
         <p className="text-sm text-gray-500">
           Apex Studio Codes Staff Portal v1.0.0
           <br />

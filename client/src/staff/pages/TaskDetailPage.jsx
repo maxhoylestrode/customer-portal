@@ -221,11 +221,11 @@ export default function TaskDetailPage() {
       {/* Top bar */}
       <div>
         <nav className="mb-2 flex items-center gap-1 text-xs text-gray-500">
-          <Link to="/staff/tasks" className="hover:text-[#0D3040]">
+          <Link to="/staff/tasks" className="hover:text-brand-700">
             Tasks
           </Link>
           <span>›</span>
-          <Link to={`/staff/clients/${task.clientId}`} className="hover:text-[#0D3040]">
+          <Link to={`/staff/clients/${task.clientId}`} className="hover:text-brand-700">
             {task.client?.name}
           </Link>
         </nav>
@@ -243,7 +243,7 @@ export default function TaskDetailPage() {
                   setEditingName(false);
                 }
               }}
-              className="w-full rounded-lg border border-brand-600 px-2 py-1 text-2xl font-bold text-[#0D3040] focus:outline-none"
+              className="w-full rounded-lg border border-brand-600 px-2 py-1 text-2xl font-bold text-brand-700 focus:outline-none"
             />
           ) : (
             <h1
@@ -253,7 +253,7 @@ export default function TaskDetailPage() {
                 setNameDraft(task.name);
                 setEditingName(true);
               }}
-              className="cursor-text rounded-lg px-2 py-1 text-2xl font-bold text-[#0D3040] hover:bg-gray-100"
+              className="cursor-text rounded-lg px-2 py-1 text-2xl font-bold text-brand-700 hover:bg-gray-100"
             >
               {task.name}
             </h1>
@@ -329,8 +329,8 @@ export default function TaskDetailPage() {
           {/* Progress */}
           <Card>
             <div className="mb-2 flex items-baseline justify-between">
-              <h2 className="text-sm font-semibold text-[#0D3040]">Progress</h2>
-              <span className="text-2xl font-bold text-[#0D3040]">{progress}%</span>
+              <h2 className="text-sm font-semibold text-brand-700">Progress</h2>
+              <span className="text-2xl font-bold text-brand-700">{progress}%</span>
             </div>
             <ProgressBar value={progress} />
             <input
@@ -356,7 +356,7 @@ export default function TaskDetailPage() {
           {/* Description */}
           <Card>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-[#0D3040]">Description</h2>
+              <h2 className="text-sm font-semibold text-brand-700">Description</h2>
               {!editingDesc && (
                 <button
                   onClick={() => {
@@ -397,7 +397,7 @@ export default function TaskDetailPage() {
           {/* Subtasks */}
           <Card>
             <div className="mb-3 flex items-center gap-3">
-              <h2 className="text-sm font-semibold text-[#0D3040]">Subtasks</h2>
+              <h2 className="text-sm font-semibold text-brand-700">Subtasks</h2>
               {total > 0 && (
                 <>
                   <span className="text-xs text-gray-500">
@@ -508,7 +508,7 @@ export default function TaskDetailPage() {
           {/* Milestones (read-only; edited from "Edit details") */}
           {task.milestones.length > 0 && (
             <Card>
-              <h2 className="mb-2 text-sm font-semibold text-[#0D3040]">Milestones</h2>
+              <h2 className="mb-2 text-sm font-semibold text-brand-700">Milestones</h2>
               <ul className="space-y-1.5">
                 {task.milestones.map((m) => (
                   <li key={m.id} className="flex items-center gap-2 text-sm text-gray-700">
@@ -525,7 +525,7 @@ export default function TaskDetailPage() {
         {/* Right column: updates */}
         <div className="lg:sticky lg:top-6 lg:self-start">
           <Card>
-            <h2 className="mb-3 text-sm font-semibold text-[#0D3040]">Updates</h2>
+            <h2 className="mb-3 text-sm font-semibold text-brand-700">Updates</h2>
             <textarea
               rows={3}
               value={comment}

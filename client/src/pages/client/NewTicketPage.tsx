@@ -90,9 +90,9 @@ export default function NewTicketPage() {
       />
 
       {/* Scope notice */}
-      <div className="bg-[#D6EAF8] border border-[#1A5276]/20 rounded-lg p-4 mb-6 flex gap-3">
-        <Info className="w-5 h-5 text-[#1A5276] shrink-0 mt-0.5" />
-        <div className="text-sm text-[#1A5276]">
+      <div className="bg-brand-100 border border-brand-600/20 rounded-lg p-4 mb-6 flex gap-3">
+        <Info className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" />
+        <div className="text-sm text-brand-600">
           <p className="font-semibold mb-1">What's included in your maintenance plan?</p>
           <p>Your plan covers bug fixes, minor content updates, and security patches on your existing website. Major redesigns, new features, and third-party integrations are outside scope. If in doubt, submit a ticket and we'll advise.</p>
         </div>
@@ -129,7 +129,7 @@ export default function NewTicketPage() {
             <p className="text-xs text-gray-400 mb-3">Screenshots, photos or documents. Up to {MAX_FILES} files, {MAX_SIZE_MB}MB each ({MAX_TOTAL_MB}MB in total).</p>
 
             <div
-              className="border-2 border-dashed border-gray-200 rounded-lg p-5 text-center cursor-pointer hover:border-[#0D3040] transition-colors"
+              className="border-2 border-dashed border-gray-200 rounded-lg p-5 text-center cursor-pointer hover:border-brand-700 transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="w-6 h-6 text-gray-300 mx-auto mb-2" />

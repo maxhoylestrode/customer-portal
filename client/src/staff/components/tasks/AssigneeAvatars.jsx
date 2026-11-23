@@ -8,7 +8,7 @@ export function Avatar({ user, size = 'h-7 w-7 text-xs', ring = true }) {
       title={user.name}
       className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold uppercase text-white ${size} ${avatarColour(
         user.id
-      )} ${ring ? 'ring-2 ring-white' : ''}`}
+      )} ${ring ? 'ring-2 ring-surface' : ''}`}
     >
       {user.name?.[0] || '?'}
     </span>
@@ -25,7 +25,7 @@ export default function AssigneeAvatars({ users = [], max = 3 }) {
         <Avatar key={u.id} user={u} />
       ))}
       {extra > 0 && (
-        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600 ring-2 ring-white">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600 ring-2 ring-surface">
           +{extra}
         </span>
       )}

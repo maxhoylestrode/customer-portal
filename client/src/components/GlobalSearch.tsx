@@ -84,11 +84,11 @@ export default function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
+        className="flex w-full items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-gray-500 transition-colors hover:border-line-strong hover:text-gray-700"
       >
         <Search className="w-4 h-4 shrink-0" />
         <span className="flex-1 text-left">Search…</span>
-        <kbd className="text-[10px] opacity-60">⌘K</kbd>
+        <kbd className="font-mono text-[10px] text-gray-400">⌘K</kbd>
       </button>
 
       {open && (
@@ -105,7 +105,7 @@ export default function GlobalSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search clients, tickets, notes, tasks…"
-                className="flex-1 outline-none text-sm text-[#0D3040] placeholder:text-gray-400"
+                className="flex-1 outline-none text-sm text-brand-700 placeholder:text-gray-400"
               />
               <button onClick={() => setOpen(false)} aria-label="Close search">
                 <X className="w-4 h-4 text-gray-400" />
@@ -131,7 +131,7 @@ export default function GlobalSearch() {
                         onClick={() => goTo(r.url)}
                         className="flex w-full flex-col items-start px-4 py-2 text-left hover:bg-gray-50"
                       >
-                        <span className="text-sm font-medium text-[#0D3040]">{r.title}</span>
+                        <span className="text-sm font-medium text-brand-700">{r.title}</span>
                         <span className="text-xs text-gray-400">{r.subtitle}</span>
                       </button>
                     ))}

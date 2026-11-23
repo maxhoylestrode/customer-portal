@@ -20,7 +20,7 @@ function DateBlock({ iso }) {
       <span className="text-[10px] font-semibold uppercase text-gray-500">
         {d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' })}
       </span>
-      <span className="text-sm font-bold text-brand-700">{d.getUTCDate()}</span>
+      <span className="num text-sm font-semibold text-gray-900">{d.getUTCDate()}</span>
     </div>
   );
 }

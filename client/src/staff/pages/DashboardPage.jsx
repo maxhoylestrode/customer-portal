@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import TaskFormModal from '../components/tasks/TaskFormModal';
 import { Avatar } from '../components/tasks/AssigneeAvatars';
 import SectionCard, { EmptyLine } from '../components/dashboard/SectionCard';
-import KpiTile from '../components/dashboard/KpiTile';
+import { KpiStrip } from '../components/dashboard/KpiTile';
 import AttentionPanel from '../components/dashboard/AttentionPanel';
 import TaskListMini from '../components/dashboard/TaskListMini';
 import ComingUpList from '../components/dashboard/ComingUpList';
@@ -60,57 +60,68 @@ export default function DashboardPage() {
   const firstName = (data.userName || user?.name || '').split(' ')[0];
   const dateLine = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
+  const pipelineSegments = data.pipeline?.map((p) => ({
+    label: statusOf(p.status).label,
+    value: p.count,
+    color: STATUSES.find((s) => s.value === p.status)?.hex,
+  }));
+
   return (
-    <div className="space-y-6">
-      {/* Greeting + quick actions */}
+    <div className="space-y-5">
+      {/* Greeting, what needs me, quick actions */}
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-700">
-            {greeting()}
-            {firstName ? `, ${firstName}` : ''}
-          </h1>
-          <p className="mt-0.5 text-sm text-gray-500">{dateLine}</p>
+        <div className="space-y-2.5">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+              {greeting()}
+              {firstName ? `, ${firstName}` : ''}
+            </h1>
+            <p className="mt-0.5 text-sm text-gray-500">{dateLine}</p>
+          </div>
+          {data.attention && <AttentionPanel attention={data.attention} />}
         </div>
         <div className="flex gap-2">
           {!isSales && (
-            <button onClick={() => setShowTaskForm(true)} className="btn-primary inline-flex items-center gap-1.5 text-sm">
+            <button onClick={() => setShowTaskForm(true)} className="btn-primary">
               <Plus className="h-4 w-4" /> New task
             </button>
           )}
-          <Link to="/staff/clients" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
+          <Link to="/staff/clients" className="btn-secondary">
             <Plus className="h-4 w-4" /> Add client
           </Link>
         </div>
       </div>
 
-      {/* 1. Does anything need me right now? */}
-      {data.attention && <AttentionPanel attention={data.attention} />}
+      {/* Headline numbers, with the task pipeline along the bottom */}
+      <KpiStrip kpis={data.kpis}>
+        {pipelineSegments && (
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-4">
+            <Link to="/staff/tasks" className="shrink-0 pt-px text-[11px] font-medium uppercase tracking-[0.06em] text-gray-500 hover:text-gray-700">
+              Task pipeline
+            </Link>
+            <div className="flex-1">
+              <StackedBar emptyLabel="No tasks yet" segments={pipelineSegments} />
+            </div>
+          </div>
+        )}
+      </KpiStrip>
 
-      {/* 2. How are we doing? */}
-      <div className={`grid grid-cols-2 gap-4 ${data.kpis.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
-        {data.kpis.map((k) => (
-          <KpiTile key={k.key} kpi={k} />
-        ))}
-      </div>
-
-      {/* 3 + 4. My tasks and what's coming up */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* What I'm working on and what's next */}
+      <div className="grid gap-5 xl:grid-cols-3">
         {data.myTasks && (
-          <SectionCard
-            title={`My tasks${data.myTasksTotal ? ` (${data.myTasksTotal})` : ''}`}
-            linkTo="/staff/tasks?mine=1"
-          >
+          <SectionCard title="My tasks" count={data.myTasksTotal || null} linkTo="/staff/tasks?mine=1" className="xl:col-span-2">
             {data.myTasks.length === 0 ? (
               <EmptyLine>No tasks assigned to you</EmptyLine>
             ) : (
-              <TaskListMini tasks={data.myTasks} />
+              <TaskListMini tasks={data.myTasks} onChanged={refetch} />
             )}
           </SectionCard>
         )}
 
         <SectionCard
-          title="Coming up (next 14 days)"
-          className={data.myTasks ? '' : 'lg:col-span-2'}
+          title="Coming up"
+          count="next 14 days"
+          className={data.myTasks ? '' : 'xl:col-span-3'}
           linkTo={isSales ? '/staff/meetings' : '/staff/calendar'}
           linkLabel={isSales ? 'Meetings' : 'Calendar'}
         >
@@ -122,114 +133,96 @@ export default function DashboardPage() {
         </SectionCard>
       </div>
 
-      {/* Task pipeline */}
-      {data.pipeline && (
-        <SectionCard title="Task pipeline" linkTo="/staff/tasks">
-          <StackedBar
-            emptyLabel="No tasks yet"
-            segments={data.pipeline.map((p) => ({
-              label: statusOf(p.status).label,
-              value: p.count,
-              color: STATUSES.find((s) => s.value === p.status)?.hex,
-            }))}
-          />
-        </SectionCard>
-      )}
-
-      {/* 5. Workload and tickets */}
-      {(data.workload || data.tickets) && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          {data.workload && (
-            <SectionCard title="Team workload">
-              {data.workload.length === 0 ? <EmptyLine>No staff yet</EmptyLine> : <WorkloadBars people={data.workload} />}
-            </SectionCard>
-          )}
-
-          {data.tickets && (
-            <SectionCard title="Tickets" linkTo="/admin/tickets" linkLabel="All tickets">
-              <StackedBar
-                emptyLabel="No tickets yet"
-                segments={data.tickets.byStatus.map((s) => ({
-                  label: TICKET_SEGMENTS[s.status]?.label ?? s.status,
-                  value: s.count,
-                  color: TICKET_SEGMENTS[s.status]?.color ?? '#9ca3af',
-                }))}
-              />
-              <div className="mt-5">
-                <p className="mb-2 text-xs font-medium text-gray-500">New tickets, last 6 months</p>
-                <MonthBars data={data.tickets.monthly} />
+      {/* Tickets, team and clients side by side */}
+      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        {data.tickets && (
+          <SectionCard title="Tickets" linkTo="/admin/tickets" linkLabel="All tickets">
+            <StackedBar
+              emptyLabel="No tickets yet"
+              segments={data.tickets.byStatus.map((s) => ({
+                label: TICKET_SEGMENTS[s.status]?.label ?? s.status,
+                value: s.count,
+                color: TICKET_SEGMENTS[s.status]?.color ?? '#9ca3af',
+              }))}
+            />
+            {data.tickets.oldestWaiting.length > 0 && (
+              <div className="mt-4 border-t border-line pt-3">
+                <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.06em] text-gray-500">Waiting longest</p>
+                <ul className="divide-y divide-gray-50">
+                  {data.tickets.oldestWaiting.map((t) => (
+                    <li key={t.id}>
+                      <Link to={`/admin/tickets/${t.id}`} className="group flex items-center justify-between gap-3 py-2">
+                        <span className="min-w-0 truncate text-sm text-gray-800 group-hover:text-brand-600">
+                          <span className="num text-gray-400">#{t.id}</span> {t.title}
+                          <span className="text-gray-400"> · {t.clientName}</span>
+                        </span>
+                        <span className={`num shrink-0 text-xs ${t.daysWaiting >= 7 ? 'font-medium text-red-500' : 'text-gray-500'}`}>
+                          {t.daysWaiting === 0 ? 'today' : `${t.daysWaiting}d`}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              {data.tickets.oldestWaiting.length > 0 && (
-                <div className="mt-5 border-t border-gray-100 pt-3">
-                  <p className="mb-1 text-xs font-medium text-gray-500">Waiting longest</p>
-                  <ul className="divide-y divide-gray-50">
-                    {data.tickets.oldestWaiting.map((t) => (
-                      <li key={t.id}>
-                        <Link to={`/admin/tickets/${t.id}`} className="flex items-center justify-between gap-3 py-2 hover:text-brand-600">
-                          <span className="min-w-0 truncate text-sm text-gray-800">
-                            #{t.id} {t.title}
-                            <span className="text-gray-400"> · {t.clientName}</span>
-                          </span>
-                          <span className={`shrink-0 text-xs ${t.daysWaiting >= 7 ? 'font-medium text-red-500' : 'text-gray-500'}`}>
-                            {t.daysWaiting === 0 ? 'today' : `${t.daysWaiting}d`}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </SectionCard>
-          )}
-        </div>
-      )}
+            )}
+            <div className="mt-auto border-t border-line pt-3">
+              <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.06em] text-gray-500">New, last 6 months</p>
+              <MonthBars data={data.tickets.monthly} />
+            </div>
+          </SectionCard>
+        )}
 
-      {/* Sales: their own referred clients */}
-      {isSales && data.referredClients && (
-        <SectionCard title="My referred clients" linkTo="/staff/clients" linkLabel="Clients">
-          {data.referredClients.length === 0 ? (
-            <EmptyLine>No referred clients yet</EmptyLine>
+        {data.workload && (
+          <SectionCard title="Team workload">
+            {data.workload.length === 0 ? <EmptyLine>No staff yet</EmptyLine> : <WorkloadBars people={data.workload} />}
+          </SectionCard>
+        )}
+
+        {isSales && data.referredClients && (
+          <SectionCard title="My referred clients" linkTo="/staff/clients" linkLabel="Clients">
+            {data.referredClients.length === 0 ? (
+              <EmptyLine>No referred clients yet</EmptyLine>
+            ) : (
+              <ul className="-mx-2 divide-y divide-gray-50">
+                {data.referredClients.slice(0, 8).map((c) => (
+                  <li key={c.id}>
+                    <Link to={`/staff/clients/${c.id}`} className="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-gray-50">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-800">{c.name}</p>
+                        <p className="truncate text-xs text-gray-500">{c.company || '—'}</p>
+                      </div>
+                      <span className="num rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">10%</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        )}
+
+        <SectionCard title={isSales ? 'Recently added by you' : 'Recently added clients'} linkTo="/staff/clients">
+          {data.recentClients.length === 0 ? (
+            <EmptyLine>No clients yet</EmptyLine>
           ) : (
             <ul className="-mx-2 divide-y divide-gray-50">
-              {data.referredClients.slice(0, 8).map((c) => (
+              {data.recentClients.map((c) => (
                 <li key={c.id}>
-                  <Link to={`/staff/clients/${c.id}`} className="flex items-center justify-between rounded-lg px-2 py-2.5 hover:bg-gray-50">
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{c.name}</p>
-                      <p className="text-xs text-gray-500">{c.company || '—'}</p>
+                  <Link to={`/staff/clients/${c.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-gray-50">
+                    <Avatar user={{ id: c.id, name: c.name }} ring={false} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-800">{c.name}</p>
+                      <p className="truncate text-xs text-gray-500">{c.company || '—'}</p>
                     </div>
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">10%</span>
+                    <span className="num shrink-0 text-xs text-gray-400">
+                      {new Date(c.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    </span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
         </SectionCard>
-      )}
-
-      {/* Recently added clients */}
-      <SectionCard title={isSales ? 'Recently added by you' : 'Recently added clients'} linkTo="/staff/clients">
-        {data.recentClients.length === 0 ? (
-          <EmptyLine>No clients yet</EmptyLine>
-        ) : (
-          <ul className="-mx-2 divide-y divide-gray-50">
-            {data.recentClients.map((c) => (
-              <li key={c.id}>
-                <Link to={`/staff/clients/${c.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-gray-50">
-                  <Avatar user={{ id: c.id, name: c.name }} ring={false} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-gray-800">{c.name}</p>
-                    <p className="truncate text-xs text-gray-500">{c.company || '—'}</p>
-                  </div>
-                  <span className="shrink-0 text-xs text-gray-400">
-                    {new Date(c.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </SectionCard>
+      </div>
 
       <TaskFormModal
         open={showTaskForm}

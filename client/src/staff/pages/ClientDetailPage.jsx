@@ -106,7 +106,7 @@ export default function ClientDetailPage() {
             <button onClick={() => navigate('/staff/clients')} className="mb-1 text-sm text-gray-500 hover:text-gray-700">
               ← Back to Clients
             </button>
-            <h1 className="text-2xl font-bold text-[#0D3040]">{client.name}</h1>
+            <h1 className="text-2xl font-bold text-brand-700">{client.name}</h1>
             {client.company && <p className="text-gray-500">{client.company}</p>}
             {client.avatarUrl && (
               <button
@@ -168,7 +168,7 @@ export default function ClientDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Contact info */}
           <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="mb-3 text-lg font-semibold text-[#0D3040]">Contact Information</h2>
+            <h2 className="mb-3 text-lg font-semibold text-brand-700">Contact Information</h2>
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
               <InfoItem label="Email" value={client.email} />
               <InfoItem label="Phone" value={client.phone} />
@@ -179,7 +179,7 @@ export default function ClientDetailPage() {
           {/* Notes */}
           {client.notes && (
             <div className="rounded-xl border border-gray-200 bg-white p-5">
-              <h2 className="mb-3 text-lg font-semibold text-[#0D3040]">Notes</h2>
+              <h2 className="mb-3 text-lg font-semibold text-brand-700">Notes</h2>
               <p className="whitespace-pre-wrap text-sm text-gray-700">{client.notes}</p>
             </div>
           )}
@@ -205,7 +205,7 @@ export default function ClientDetailPage() {
           {currentUser?.role !== 'sales' && (
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <div className="flex items-center justify-between p-5 pb-4">
-              <h2 className="text-lg font-semibold text-[#0D3040]">Tasks ({client.projects?.length || 0})</h2>
+              <h2 className="text-lg font-semibold text-brand-700">Tasks ({client.projects?.length || 0})</h2>
               <button
                 onClick={() => setShowTaskForm(true)}
                 className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
@@ -330,7 +330,7 @@ function PortalAccessCard({ client, onUpdate }) {
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5">
-      <h2 className="mb-3 text-lg font-semibold text-[#0D3040]">Portal Access</h2>
+      <h2 className="mb-3 text-lg font-semibold text-brand-700">Portal Access</h2>
       {client.portalUser ? (
         <div className="space-y-3">
           <div>
@@ -498,7 +498,7 @@ function FileSection({ clientId, files, onUpdate }) {
     <>
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#0D3040]">Files ({files?.length || 0})</h2>
+          <h2 className="text-lg font-semibold text-brand-700">Files ({files?.length || 0})</h2>
           <label className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300">
             {uploading ? 'Uploading…' : '+ Upload'}
             <input type="file" className="hidden" accept=".txt,.pdf,.docx,.doc,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif" onChange={handleUpload} disabled={uploading} />
@@ -526,7 +526,7 @@ function FileSection({ clientId, files, onUpdate }) {
                   )}
                   <div className="min-w-0">
                     <p className="truncate font-medium text-gray-800">{f.filename}</p>
-                    <p className="text-xs text-gray-500">{new Date(f.uploadedAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-500 num">{new Date(f.uploadedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="flex gap-2 ml-2 shrink-0">
@@ -722,7 +722,7 @@ function NotesSection({ clientId }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-[#0D3040]">Notes ({notes.length})</h2>
+        <h2 className="text-lg font-semibold text-brand-700">Notes ({notes.length})</h2>
         <button
           onClick={openNew}
           className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-300"

@@ -88,7 +88,7 @@ export default function AdminProfilePage() {
               onSubmit={profileForm.handleSubmit((d) => updateProfileMutation.mutate(d))}
               className="card px-5 py-5 space-y-4"
             >
-              <h2 className="font-semibold text-[#0D3040] text-sm flex items-center gap-2">
+              <h2 className="font-semibold text-brand-700 text-sm flex items-center gap-2">
                 <User className="w-4 h-4" />
                 Edit Profile
               </h2>
@@ -121,7 +121,7 @@ export default function AdminProfilePage() {
           ) : (
             <div className="card px-5 py-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-[#0D3040] text-sm flex items-center gap-2">
+                <h2 className="font-semibold text-brand-700 text-sm flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Account Details
                 </h2>
@@ -140,7 +140,7 @@ export default function AdminProfilePage() {
             onSubmit={passwordForm.handleSubmit((d) => changePasswordMutation.mutate(d))}
             className="card px-5 py-5 space-y-4"
           >
-            <h2 className="font-semibold text-[#0D3040] text-sm flex items-center gap-2">
+            <h2 className="font-semibold text-brand-700 text-sm flex items-center gap-2">
               <KeyRound className="w-4 h-4" />
               Change Password
             </h2>
@@ -180,11 +180,11 @@ export default function AdminProfilePage() {
         <div className="space-y-6">
           <div className="card px-5 py-5">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-[#0D3040] flex items-center justify-center text-white text-xl font-bold">
+              <div className="w-14 h-14 rounded-full bg-brand-700 flex items-center justify-center text-white text-xl font-bold">
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="font-semibold text-[#0D3040]">{user?.name}</p>
+                <p className="font-semibold text-brand-700">{user?.name}</p>
                 <p className="text-sm text-gray-500">{user?.email}</p>
                 <p className="text-xs text-gray-400 mt-0.5">Administrator</p>
               </div>

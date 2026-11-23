@@ -11,7 +11,8 @@ export default function DueDate({ date, complete = false, className = '' }) {
     soon: 'text-amber-600',
     ok: 'text-gray-500',
   }[state];
-  const text = state === 'overdue' ? `Overdue · ${formatDay(date)}` : state === 'today' ? 'Today' : formatDay(date);
+  const day = <span className="num">{formatDay(date)}</span>;
+  const text = state === 'overdue' ? <>Overdue · {day}</> : state === 'today' ? 'Today' : day;
   return (
     <span className={`whitespace-nowrap text-xs ${colour} ${className}`} title={formatDay(date, true)}>
       {text}

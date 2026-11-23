@@ -4,7 +4,7 @@ import { STATUSES, statusOf } from '../../constants/tasks';
 
 // Coloured status pill. Pass `onChange` to make it a dropdown that changes the
 // status. `compact` shows just the coloured dot (used at the start of rows).
-export default function StatusPill({ status, onChange, compact = false }) {
+export default function StatusPill({ status, onChange, compact = false, align = 'left' }) {
   const s = statusOf(status);
 
   if (compact) {
@@ -26,7 +26,7 @@ export default function StatusPill({ status, onChange, compact = false }) {
   );
   if (!onChange) return pill;
   return (
-    <Dropdown trigger={pill}>
+    <Dropdown trigger={pill} align={align}>
       {(close) => <StatusMenu current={status} onPick={(v) => { close(); onChange(v); }} />}
     </Dropdown>
   );

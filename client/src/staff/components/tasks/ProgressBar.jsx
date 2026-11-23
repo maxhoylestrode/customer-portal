@@ -9,7 +9,7 @@ export default function ProgressBar({ value = 0, showLabel = false, className = 
           style={{ width: `${pct}%` }}
         />
       </div>
-      {showLabel && <span className="w-9 text-right text-xs text-gray-500">{pct}%</span>}
+      {showLabel && <span className="w-9 text-right text-xs text-gray-500 num">{pct}%</span>}
     </div>
   );
 }

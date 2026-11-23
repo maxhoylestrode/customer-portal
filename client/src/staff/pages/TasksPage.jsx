@@ -147,7 +147,7 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#0D3040]">Tasks</h1>
+          <h1 className="text-2xl font-bold text-brand-700">Tasks</h1>
           <p className="mt-0.5 text-sm text-gray-500">Everything the team is working on</p>
         </div>
         <button
@@ -282,7 +282,7 @@ export default function TasksPage() {
                 >
                   {isCollapsed ? <ChevronRight className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
                   <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
-                  <span className="text-sm font-semibold text-[#0D3040]">{s.label}</span>
+                  <span className="text-sm font-semibold text-brand-700">{s.label}</span>
                   <span className="text-xs text-gray-400">{group.length}</span>
                 </button>
                 {!isCollapsed && (
@@ -331,7 +331,7 @@ export default function TasksPage() {
               >
                 <div className="mb-2 flex items-center gap-2 px-1">
                   <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
-                  <span className="text-sm font-semibold text-[#0D3040]">{s.label}</span>
+                  <span className="text-sm font-semibold text-brand-700">{s.label}</span>
                   <span className="text-xs text-gray-400">{col.length}</span>
                 </div>
                 <div className="min-h-[3rem] space-y-2">

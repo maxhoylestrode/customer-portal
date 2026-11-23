@@ -143,7 +143,7 @@ export default function CalendarPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-[#0D3040]">Calendar</h1>
+        <h1 className="text-2xl font-bold text-brand-700">Calendar</h1>
         <div className="flex flex-wrap items-center gap-2">
           {currentUser && (
             <button

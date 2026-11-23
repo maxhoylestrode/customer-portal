@@ -105,7 +105,7 @@ export default function NotesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0D3040]">Notes</h1>
+          <h1 className="text-2xl font-bold text-brand-700">Notes</h1>
           <p className="mt-1 text-sm text-gray-500">Shared team notes and personal private notes.</p>
         </div>
         <button

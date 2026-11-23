@@ -9,7 +9,7 @@ export default function Spinner({ className = '' }: { className?: string }) {
 export function PageSpinner() {
   return (
     <div className="flex items-center justify-center min-h-[200px]">
-      <Spinner className="w-8 h-8 text-[#0D3040]" />
+      <Spinner className="w-8 h-8 text-brand-700" />
     </div>
   );
 }

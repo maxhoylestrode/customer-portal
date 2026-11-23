@@ -132,8 +132,8 @@ export default function AdminTicketDetail() {
         <div className="lg:col-span-2 space-y-5">
 
           {/* Description */}
-          <div className="card px-5 py-5 border-l-4 border-[#0D3040]">
-            <h3 className="font-semibold text-[#0D3040] mb-3 text-sm flex items-center gap-2">
+          <div className="card px-5 py-5 border-l-4 border-brand-700">
+            <h3 className="font-semibold text-brand-700 mb-3 text-sm flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Description
             </h3>
@@ -142,7 +142,7 @@ export default function AdminTicketDetail() {
 
           {/* Admin notes */}
           <div className="card px-5 py-5">
-            <h3 className="font-semibold text-[#0D3040] mb-1 text-sm">
+            <h3 className="font-semibold text-brand-700 mb-1 text-sm">
               Admin Notes{' '}
               <span className="font-normal text-gray-400 text-xs">(visible to client)</span>
             </h3>
@@ -166,7 +166,7 @@ export default function AdminTicketDetail() {
 
           {/* Attachments */}
           <div className="card px-5 py-5">
-            <h3 className="font-semibold text-[#0D3040] mb-3 text-sm flex items-center gap-2">
+            <h3 className="font-semibold text-brand-700 mb-3 text-sm flex items-center gap-2">
               <Paperclip className="w-4 h-4" />
               Attachments
               <span className="text-gray-400 font-normal ml-0.5">({attachments.length})</span>
@@ -185,7 +185,7 @@ export default function AdminTicketDetail() {
                       href={`/api/tickets/${att.ticket_id}/attachments/${att.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-[#0D3040] flex-1 truncate hover:underline flex items-center gap-1"
+                      className="text-sm text-brand-700 flex-1 truncate hover:underline flex items-center gap-1"
                     >
                       {att.filename}
                       <ExternalLink className="w-3 h-3 text-gray-400" />
@@ -213,7 +213,7 @@ export default function AdminTicketDetail() {
 
           {/* Manage Ticket */}
           <div className="card px-5 py-5 space-y-4">
-            <h3 className="font-semibold text-[#0D3040] text-sm border-b border-gray-100 pb-3 flex items-center gap-2">
+            <h3 className="font-semibold text-brand-700 text-sm border-b border-gray-100 pb-3 flex items-center gap-2">
               <Tag className="w-4 h-4" />
               Manage Ticket
             </h3>
@@ -276,14 +276,14 @@ export default function AdminTicketDetail() {
 
           {/* Client info */}
           <div className="card px-5 py-5 space-y-3">
-            <h3 className="font-semibold text-[#0D3040] text-sm border-b border-gray-100 pb-3 flex items-center gap-2">
+            <h3 className="font-semibold text-brand-700 text-sm border-b border-gray-100 pb-3 flex items-center gap-2">
               <User className="w-4 h-4" />
               Client
             </h3>
             <div>
               <Link
                 to={`/admin/users/${ticket.user_id}`}
-                className="text-sm font-medium text-[#1A5276] hover:underline"
+                className="text-sm font-medium text-brand-600 hover:underline"
               >
                 {ticket.company_name || ticket.client_name}
               </Link>
@@ -293,7 +293,7 @@ export default function AdminTicketDetail() {
                   href={ticket.website_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-[#1A5276] hover:underline flex items-center gap-1 mt-1.5"
+                  className="text-xs text-brand-600 hover:underline flex items-center gap-1 mt-1.5"
                 >
                   {ticket.website_url}
                   <ExternalLink className="w-3 h-3" />
@@ -301,8 +301,8 @@ export default function AdminTicketDetail() {
               )}
             </div>
             <div className="pt-2 border-t border-gray-100 space-y-1">
-              <p className="text-xs text-gray-400">Submitted {formatDate(ticket.created_at)}</p>
-              <p className="text-xs text-gray-400">Updated {formatDate(ticket.updated_at)}</p>
+              <p className="text-xs text-gray-400">Submitted <span className="num">{formatDate(ticket.created_at)}</span></p>
+              <p className="text-xs text-gray-400">Updated <span className="num">{formatDate(ticket.updated_at)}</span></p>
             </div>
           </div>
         </div>

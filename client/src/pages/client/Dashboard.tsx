@@ -47,8 +47,8 @@ export default function ClientDashboard() {
       {/* Recent tickets */}
       <div className="card">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-[#0D3040]">Recent Tickets</h2>
-          <Link to="/tickets" className="text-sm text-[#1A5276] hover:underline">View all</Link>
+          <h2 className="font-semibold text-brand-700">Recent Tickets</h2>
+          <Link to="/tickets" className="text-sm text-brand-600 hover:underline">View all</Link>
         </div>
         {recent.length === 0 ? (
           <div className="text-center py-12">
@@ -62,8 +62,8 @@ export default function ClientDashboard() {
               <li key={ticket.id}>
                 <Link to={`/tickets/${ticket.id}`} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#0D3040] truncate">{ticket.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">#{ticket.id} · {formatDate(ticket.created_at)}</p>
+                    <p className="text-sm font-medium text-brand-700 truncate">{ticket.title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 num">#{ticket.id} · {formatDate(ticket.created_at)}</p>
                   </div>
                   <StatusBadge status={ticket.status} size="sm" />
                 </Link>
@@ -82,7 +82,7 @@ function StatCard({ label, value, icon, colour }: { label: string; value: number
     <div className="card px-5 py-4 flex items-center gap-4">
       <div className={`p-2.5 rounded-lg ${bg[colour]}`}>{icon}</div>
       <div>
-        <p className="text-2xl font-bold text-[#0D3040]">{value}</p>
+        <p className="text-2xl font-bold text-brand-700">{value}</p>
         <p className="text-xs text-gray-500">{label}</p>
       </div>
     </div>

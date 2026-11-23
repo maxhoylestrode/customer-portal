@@ -12,6 +12,7 @@ interface Kpi {
   value: number | string;
   context: string; // already a sentence, e.g. "2 new this week"
   trend?: 'up' | 'down' | 'flat';
+  alert?: boolean; // context needs attention (shown in red)
   href: string;
 }
 
@@ -39,6 +40,7 @@ interface DashboardOverview {
     name: string;
     status: string;
     priority: string;
+    progress: number;
     endDate: Date | null;
     clientName: string;
   }> | null;
@@ -83,13 +85,13 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
     const tomorrow = addDays(today, 1);
     const weekAhead = addDays(today, 7);
     const fortnightEnd = addDays(today, 15); // exclusive, so day 14 is included
-    const weekAgo = addDays(now, -7);
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
 
     const open: Prisma.ProjectWhereInput = { status: { not: 'complete' } };
-    const mineOpen: Prisma.ProjectWhereInput = { ...open, assignedUsers: { some: { id: userId } } };
+    const mine: Prisma.ProjectWhereInput = { assignedUsers: { some: { id: userId } } };
+    const mineOpen: Prisma.ProjectWhereInput = { ...open, ...mine };
     const clientScope: Prisma.ClientWhereInput = isSales ? { salesPersonId: userId } : {};
 
     const none = Promise.resolve(null);
@@ -97,18 +99,17 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
     const [
       me,
       totalClients,
-      clientsThisMonth,
       recentClients,
       referredClients,
       // tasks
-      activeTasks,
-      dueThisWeek,
       overdueTasks,
       dueTodayTasks,
       myOpenCount,
       myOverdueCount,
-      doneThisMonth,
-      doneLastMonth,
+      myDueThisWeek,
+      myDueToday,
+      myDoneThisMonth,
+      myDoneLastMonth,
       myTasks,
       pipelineGroups,
       workloadUsers,
@@ -117,15 +118,13 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
       // meetings (every role)
       comingMeetings,
       // tickets (admin)
-      openTickets,
-      newTicketsThisWeek,
+      pendingTickets,
       ticketGroups,
       recentTicketDates,
       oldestPending,
     ] = await Promise.all([
       prisma.user.findUnique({ where: { id: userId }, select: { name: true } }),
       prisma.client.count(),
-      prisma.client.count({ where: { createdAt: { gte: monthStart } } }),
       prisma.client.findMany({
         where: clientScope,
         orderBy: { createdAt: 'desc' },
@@ -140,14 +139,14 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
           })
         : none,
 
-      seesTasks ? prisma.project.count({ where: open }) : none,
-      seesTasks ? prisma.project.count({ where: { ...open, endDate: { gte: today, lt: weekAhead } } }) : none,
       seesTasks ? prisma.project.count({ where: { ...open, endDate: { lt: today } } }) : none,
       seesTasks ? prisma.project.count({ where: { ...open, endDate: { gte: today, lt: tomorrow } } }) : none,
       seesTasks ? prisma.project.count({ where: mineOpen }) : none,
       seesTasks ? prisma.project.count({ where: { ...mineOpen, endDate: { lt: today } } }) : none,
-      seesTasks ? prisma.project.count({ where: { completedAt: { gte: monthStart } } }) : none,
-      seesTasks ? prisma.project.count({ where: { completedAt: { gte: lastMonthStart, lt: monthStart } } }) : none,
+      seesTasks ? prisma.project.count({ where: { ...mineOpen, endDate: { gte: today, lt: weekAhead } } }) : none,
+      seesTasks ? prisma.project.count({ where: { ...mineOpen, endDate: { gte: today, lt: tomorrow } } }) : none,
+      seesTasks ? prisma.project.count({ where: { ...mine, completedAt: { gte: monthStart } } }) : none,
+      seesTasks ? prisma.project.count({ where: { ...mine, completedAt: { gte: lastMonthStart, lt: monthStart } } }) : none,
       seesTasks
         ? prisma.project.findMany({
             where: mineOpen,
@@ -158,6 +157,7 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
               name: true,
               status: true,
               priority: true,
+              progress: true,
               endDate: true,
               client: { select: { name: true } },
             },
@@ -198,8 +198,7 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
         select: { id: true, date: true, startTime: true, clientName: true, serviceType: true },
       }),
 
-      isAdmin ? prisma.ticket.count({ where: { status: { in: ['pending', 'in_progress'] } } }) : none,
-      isAdmin ? prisma.ticket.count({ where: { createdAt: { gte: weekAgo } } }) : none,
+      isAdmin ? prisma.ticket.count({ where: { status: 'pending' } }) : none,
       isAdmin ? prisma.ticket.groupBy({ by: ['status'], _count: { _all: true } }) : none,
       isAdmin ? prisma.ticket.findMany({ where: { createdAt: { gte: sixMonthsAgo } }, select: { createdAt: true } }) : none,
       isAdmin
@@ -214,13 +213,6 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
 
     // ── KPI tiles ──
     const kpis: Kpi[] = [];
-    const clientsTile: Kpi = {
-      key: 'clients',
-      label: 'Clients',
-      value: totalClients,
-      context: clientsThisMonth ? `+${clientsThisMonth} this month` : 'none added this month',
-      href: '/staff/clients',
-    };
 
     if (isSales) {
       kpis.push(
@@ -241,52 +233,63 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
         { key: 'commission', label: 'Commission rate', value: '10%', context: 'per referred client deal', href: '/staff/clients' }
       );
     } else {
-      const done = doneThisMonth ?? 0;
-      const last = doneLastMonth ?? 0;
+      // Everything in the strip is about the person looking at it; team-wide
+      // numbers live in the pipeline, workload and ticket cards below.
+      const done = myDoneThisMonth ?? 0;
+      const last = myDoneLastMonth ?? 0;
       const diff = done - last;
-      const doneTile: Kpi = {
-        key: 'doneThisMonth',
-        label: 'Done this month',
+      const overdue = myOverdueCount ?? 0;
+      const dueToday = myDueToday ?? 0;
+
+      kpis.push(
+        {
+          key: 'myOpenTasks',
+          label: 'My open tasks',
+          value: myOpenCount ?? 0,
+          context: overdue ? `${overdue} overdue` : 'none overdue',
+          alert: overdue > 0,
+          href: overdue ? '/staff/tasks?mine=1&overdue=1' : '/staff/tasks?mine=1',
+        },
+        {
+          key: 'myDueThisWeek',
+          label: 'Due this week',
+          value: myDueThisWeek ?? 0,
+          context: dueToday ? `${dueToday} due today` : 'none due today',
+          alert: dueToday > 0,
+          href: '/staff/tasks?mine=1',
+        }
+      );
+
+      if (isAdmin) {
+        const waiting = oldestPending?.[0];
+        const oldestDays = waiting ? Math.floor((now.getTime() - waiting.createdAt.getTime()) / DAY) : 0;
+        kpis.push({
+          key: 'ticketsWaiting',
+          label: 'Tickets waiting',
+          value: pendingTickets ?? 0,
+          context: waiting ? `oldest ${oldestDays === 0 ? 'today' : `${oldestDays}d`}` : 'all replied to',
+          alert: oldestDays >= 7,
+          href: '/admin/tickets?status=pending',
+        });
+      } else {
+        const meetingsThisWeek = comingMeetings.filter((m) => m.date < weekAhead).length;
+        kpis.push({
+          key: 'myMeetings',
+          label: 'My meetings',
+          value: meetingsThisWeek,
+          context: 'next 7 days',
+          href: '/staff/meetings',
+        });
+      }
+
+      kpis.push({
+        key: 'myDoneThisMonth',
+        label: 'I finished this month',
         value: done,
         context: diff === 0 ? 'same as last month' : `${diff > 0 ? '↑' : '↓'} ${Math.abs(diff)} vs last month`,
         trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat',
-        href: '/staff/tasks?includeComplete=1',
-      };
-      const activeTile: Kpi = {
-        key: 'activeTasks',
-        label: 'Active tasks',
-        value: activeTasks ?? 0,
-        context: dueThisWeek ? `${dueThisWeek} due this week` : 'none due this week',
-        href: '/staff/tasks',
-      };
-
-      if (isAdmin) {
-        kpis.push(
-          {
-            key: 'openTickets',
-            label: 'Open tickets',
-            value: openTickets ?? 0,
-            context: newTicketsThisWeek ? `${newTicketsThisWeek} new this week` : 'none new this week',
-            href: '/admin/tickets',
-          },
-          activeTile,
-          doneTile,
-          clientsTile
-        );
-      } else {
-        kpis.push(
-          activeTile,
-          {
-            key: 'myOpenTasks',
-            label: 'My open tasks',
-            value: myOpenCount ?? 0,
-            context: myOverdueCount ? `${myOverdueCount} overdue` : 'none overdue',
-            href: '/staff/tasks?mine=1',
-          },
-          doneTile,
-          clientsTile
-        );
-      }
+        href: '/staff/tasks?mine=1&includeComplete=1',
+      });
     }
 
     // ── Pipeline (all five statuses, zero-filled, in order) ──
@@ -396,6 +399,7 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
             name: t.name,
             status: t.status,
             priority: t.priority,
+            progress: t.progress,
             endDate: t.endDate,
             clientName: t.client.name,
           }))
