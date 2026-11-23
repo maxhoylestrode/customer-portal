@@ -81,11 +81,17 @@ app.use('/api/push', pushRoutes);
 // none of them get shadowed by the catch-all.
 if (process.env.NODE_ENV === 'production') {
   const clientDist = path.join(__dirname, '../../client/dist');
+  // Only Vite's content-hashed bundles (/assets/*) are safe to cache for a
+  // year. Everything else keeps a stable name across deploys (theme-init.js,
+  // sw.js, the manifest, icons), so browsers must revalidate it.
   app.use(express.static(clientDist, {
-    maxAge: '1y',
     setHeaders(res, filePath) {
       if (filePath.endsWith('.html')) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else {
+        res.setHeader('Cache-Control', 'no-cache');
       }
     },
   }));

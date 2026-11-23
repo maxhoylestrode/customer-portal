@@ -44,13 +44,34 @@ import StaffSettingsPage from './staff/pages/SettingsPage';
 // Misc
 import NotFoundPage from './pages/NotFoundPage';
 
+// The access token only lasts 15 minutes, so on a fresh visit it has usually
+// expired while the 7-day refresh token is still good: renew once and retry
+// before treating the visitor as logged out. Shared across calls because a
+// refresh token is single-use: two parallel refreshes (e.g. StrictMode running
+// effects twice) would have the second one fail and log the user out.
+let sessionPromise: Promise<User | null> | null = null;
+function loadSession(): Promise<User | null> {
+  sessionPromise ??= authApi
+    .getMe()
+    .catch(async (err) => {
+      if (err?.response?.status !== 401) throw err;
+      await authApi.refresh();
+      return authApi.getMe();
+    })
+    .then((res) => res.data.user)
+    .finally(() => {
+      sessionPromise = null;
+    });
+  return sessionPromise;
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    authApi.getMe()
-      .then((res) => setUser(res.data.user))
+    loadSession()
+      .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setIsLoading(false));
   }, []);

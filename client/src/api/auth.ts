@@ -19,6 +19,10 @@ export const authApi = {
 
   getMe: () => api.get<{ user: User }>('/auth/me'),
 
+  // '/auth/refresh' is excluded from the axios retry interceptor, so a failed
+  // refresh here just rejects instead of redirecting to /login
+  refresh: () => api.post('/auth/refresh'),
+
   forgotPassword: (email: string) =>
     api.post<{ ok: boolean; message: string }>('/auth/forgot-password', { email }),
 
