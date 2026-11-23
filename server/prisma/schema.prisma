@@ -329,6 +329,11 @@ model StorageFileAccess {
   @@map("storage_file_access")
 }
 
+// The Meetings feature was removed from the app (Nov 2026). These two models
+// are kept only so the existing `available_slots` and `meetings` tables and
+// their data stay in the database. Nothing reads or writes them. Removing the
+// models would make the next `prisma migrate dev` generate a migration that
+// drops both tables.
 model AvailableSlot {
   id        Int      @id @default(autoincrement())
   userId    Int      @map("user_id")

@@ -17,10 +17,9 @@ interface Kpi {
 }
 
 interface ComingUpItem {
-  kind: 'task' | 'milestone' | 'meeting';
+  kind: 'task' | 'milestone';
   id: number;
   date: string; // ISO
-  time?: string; // meetings only, "09:00"
   title: string;
   subtitle: string;
   href: string;
@@ -45,7 +44,7 @@ interface DashboardOverview {
     clientName: string;
   }> | null;
   myTasksTotal: number | null;
-  comingUp: ComingUpItem[];
+  comingUp: ComingUpItem[] | null; // null for sales
   pipeline: Array<{ status: string; count: number }> | null;
   workload: Array<{ userId: number; name: string; open: number; overdue: number }> | null;
   tickets: {
@@ -115,8 +114,6 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
       workloadUsers,
       comingTasks,
       comingMilestones,
-      // meetings (every role)
-      comingMeetings,
       // tickets (admin)
       pendingTickets,
       ticketGroups,
@@ -191,13 +188,6 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
           })
         : none,
 
-      prisma.meeting.findMany({
-        where: { staffUserId: userId, date: { gte: today, lt: fortnightEnd } },
-        orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
-        take: 20,
-        select: { id: true, date: true, startTime: true, clientName: true, serviceType: true },
-      }),
-
       isAdmin ? prisma.ticket.count({ where: { status: 'pending' } }) : none,
       isAdmin ? prisma.ticket.groupBy({ by: ['status'], _count: { _all: true } }) : none,
       isAdmin ? prisma.ticket.findMany({ where: { createdAt: { gte: sixMonthsAgo } }, select: { createdAt: true } }) : none,
@@ -271,15 +261,6 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
           alert: oldestDays >= 7,
           href: '/admin/tickets?status=pending',
         });
-      } else {
-        const meetingsThisWeek = comingMeetings.filter((m) => m.date < weekAhead).length;
-        kpis.push({
-          key: 'myMeetings',
-          label: 'My meetings',
-          value: meetingsThisWeek,
-          context: 'next 7 days',
-          href: '/staff/meetings',
-        });
       }
 
       kpis.push({
@@ -330,20 +311,8 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
         subtitle: `Milestone · ${m.project.name}`,
         href: `/staff/tasks/${m.project.id}`,
       })),
-      ...comingMeetings.map((m): ComingUpItem => ({
-        kind: 'meeting',
-        id: m.id,
-        date: m.date.toISOString(),
-        time: m.startTime ?? undefined,
-        title: m.clientName,
-        subtitle: `Meeting${m.startTime ? ` · ${m.startTime}` : ''} · ${m.serviceType}`,
-        href: '/staff/meetings',
-      })),
     ]
-      .sort((a, b) => {
-        const byDay = a.date.slice(0, 10).localeCompare(b.date.slice(0, 10));
-        return byDay !== 0 ? byDay : (a.time ?? '').localeCompare(b.time ?? '');
-      })
+      .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, 8);
 
     // ── Tickets (admin only) ──
@@ -405,7 +374,7 @@ export async function overview(req: Request, res: Response, next: NextFunction) 
           }))
         : null,
       myTasksTotal: seesTasks ? myOpenCount : null,
-      comingUp,
+      comingUp: seesTasks ? comingUp : null,
       pipeline,
       workload,
       tickets,

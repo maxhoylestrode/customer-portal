@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { CalendarClock, CheckSquare, Flag } from 'lucide-react';
+import { CheckSquare, Flag } from 'lucide-react';
 import { dayKey, todayKey } from '../../constants/tasks';
 
-const KIND_ICON = { task: CheckSquare, milestone: Flag, meeting: CalendarClock };
+const KIND_ICON = { task: CheckSquare, milestone: Flag };
 
 // Date block: "Today" in the brand colour, otherwise "FRI / 14".
 function DateBlock({ iso }) {

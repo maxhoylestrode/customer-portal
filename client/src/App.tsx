@@ -37,7 +37,6 @@ import StaffClientDetailPage from './staff/pages/ClientDetailPage';
 import StaffCalendarPage from './staff/pages/CalendarPage';
 import StaffTasksPage from './staff/pages/TasksPage';
 import StaffTaskDetailPage from './staff/pages/TaskDetailPage';
-import StaffMeetingsPage from './staff/pages/MeetingsPage';
 import StaffFilesPage from './staff/pages/FilesPage';
 import StaffNotesPage from './staff/pages/NotesPage';
 import StaffSettingsPage from './staff/pages/SettingsPage';
@@ -101,7 +100,6 @@ export default function App() {
                 <Route path="/staff/clients" element={<StaffClientsPage />} />
                 <Route path="/staff/clients/:id" element={<StaffClientDetailPage />} />
                 <Route path="/staff/calendar" element={<StaffCalendarPage />} />
-                <Route path="/staff/meetings" element={<StaffMeetingsPage />} />
                 <Route path="/staff/files" element={<StaffFilesPage />} />
                 <Route path="/staff/notes" element={<StaffNotesPage />} />
                 <Route path="/staff/settings" element={<StaffSettingsPage />} />
