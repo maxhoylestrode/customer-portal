@@ -107,31 +107,35 @@ export default function DashboardPage() {
       </KpiStrip>
 
       {/* What I'm working on and what's next */}
-      <div className="grid gap-5 xl:grid-cols-3">
-        {data.myTasks && (
-          <SectionCard title="My tasks" count={data.myTasksTotal || null} linkTo="/staff/tasks?mine=1" className="xl:col-span-2">
-            {data.myTasks.length === 0 ? (
-              <EmptyLine>No tasks assigned to you</EmptyLine>
-            ) : (
-              <TaskListMini tasks={data.myTasks} onChanged={refetch} />
-            )}
-          </SectionCard>
-        )}
-
-        <SectionCard
-          title="Coming up"
-          count="next 14 days"
-          className={data.myTasks ? '' : 'xl:col-span-3'}
-          linkTo={isSales ? '/staff/meetings' : '/staff/calendar'}
-          linkLabel={isSales ? 'Meetings' : 'Calendar'}
-        >
-          {data.comingUp.length === 0 ? (
-            <EmptyLine>Nothing due in the next two weeks</EmptyLine>
-          ) : (
-            <ComingUpList items={data.comingUp} />
+      {(data.myTasks || data.comingUp) && (
+        <div className="grid gap-5 xl:grid-cols-3">
+          {data.myTasks && (
+            <SectionCard title="My tasks" count={data.myTasksTotal || null} linkTo="/staff/tasks?mine=1" className="xl:col-span-2">
+              {data.myTasks.length === 0 ? (
+                <EmptyLine>No tasks assigned to you</EmptyLine>
+              ) : (
+                <TaskListMini tasks={data.myTasks} onChanged={refetch} />
+              )}
+            </SectionCard>
           )}
-        </SectionCard>
-      </div>
+
+          {data.comingUp && (
+            <SectionCard
+              title="Coming up"
+              count="next 14 days"
+              className={data.myTasks ? '' : 'xl:col-span-3'}
+              linkTo="/staff/calendar"
+              linkLabel="Calendar"
+            >
+              {data.comingUp.length === 0 ? (
+                <EmptyLine>Nothing due in the next two weeks</EmptyLine>
+              ) : (
+                <ComingUpList items={data.comingUp} />
+              )}
+            </SectionCard>
+          )}
+        </div>
+      )}
 
       {/* Tickets, team and clients side by side */}
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">

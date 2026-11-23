@@ -272,8 +272,6 @@ Roles: `admin` (full access), `staff` (no client-role restrictions), `sales` (bl
 | `PATCH /api/storage/:fileId/permissions` | Set storage file sharing |
 | `GET /api/storage/:fileId/view`, `/download`, `DELETE /api/storage/:fileId` | Storage file access |
 | `GET/POST /api/general-notes`, `PUT/DELETE /api/general-notes/:id` | Team notes (public or private) |
-| `GET/POST /api/meetings/available-slots`, `DELETE /api/meetings/available-slots/:id` | Calendar availability |
-| `GET/POST /api/meetings`, `PUT/DELETE /api/meetings/:id` | Booked meetings |
 | `GET /api/users` | List internal accounts (assignee pickers) |
 | `GET /api/search?q=` | Global search across clients, notes, and (role-permitting) tickets/projects |
 | `GET /api/push/vapid-public-key` | Public key the browser needs to subscribe |
